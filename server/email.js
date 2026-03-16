@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 
 let transporter;
+let smtpVerified = false;
 
 function getTransporter() {
   if (transporter) return transporter;
@@ -11,7 +12,7 @@ function getTransporter() {
   const pass = process.env.SMTP_PASS;
 
   if (!host || !user || !pass) {
-    console.warn('SMTP not configured — email verification codes will be logged to console');
+    console.warn('SMTP not configured — email verification will be skipped');
     return null;
   }
 
@@ -20,9 +21,15 @@ function getTransporter() {
     port,
     secure: port === 465,
     auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
   });
 
   return transporter;
+}
+
+function isSmtpConfigured() {
+  return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
 function generateCode() {
@@ -46,12 +53,20 @@ async function sendVerificationEmail(to, code) {
     return;
   }
 
-  await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to,
-    subject: 'Your Brktz Verification Code',
-    html,
-  });
+  try {
+    await transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject: 'Your Brktz Verification Code',
+      html,
+    });
+    console.log(`✅ Verification email sent to ${to}`);
+  } catch (err) {
+    console.error(`❌ Failed to send email to ${to}:`, err.message);
+    // Log the code to console as fallback
+    console.log(`📧 FALLBACK — VERIFICATION CODE for ${to}: ${code}`);
+    throw new Error('Failed to send verification email. Please check SMTP configuration.');
+  }
 }
 
-module.exports = { generateCode, sendVerificationEmail };
+module.exports = { generateCode, sendVerificationEmail, isSmtpConfigured };
