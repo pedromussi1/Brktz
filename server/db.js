@@ -1,7 +1,12 @@
 const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'brktz.db');
+// Store DB inside uploads/ so a single Railway volume covers both
+const dataDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+const dbPath = path.join(dataDir, 'brktz.db');
 const db = new Database(dbPath);
 
 // Enable WAL mode for better concurrent read performance
