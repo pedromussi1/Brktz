@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brktz — World Cup Tournaments</title>
+  <meta name="description" content="Play tournament-style world cups on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
+  <meta property="og:title" content="Brktz — World Cup Tournaments">
+  <meta property="og:description" content="Play tournament-style world cups on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%233b82f6'/><text y='.9em' font-size='72' x='12' fill='white' font-weight='900'>B</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- NProgress Bar -->
+<div id="nprogress"></div>
+
+<!-- Mobile Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <!-- Sidebar toggle -->
+  <button class="sidebar-toggle" id="sidebar-toggle-btn" aria-label="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
+  <!-- Logo -->
+  <a class="header-logo" href="#" id="logo-link">
+    <div class="logo-icon">B</div>
+    <span class="logo-text">Brktz</span>
+  </a>
+
+  <!-- Search -->
+  <div class="header-search">
+    <span class="search-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </span>
+    <input type="text" id="header-search-input" placeholder="Search world cups, creators, categories…" autocomplete="off">
+  </div>
+
+  <!-- Actions -->
+  <div class="header-actions">
+    <button class="btn btn-ghost" id="btn-browse">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Browse
+    </button>
+    <button class="btn btn-primary" id="btn-create">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Create
+    </button>
+    <div id="auth-area">
+      <!-- Populated by JS: sign in/sign up buttons or user menu -->
+    </div>
+    <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+      <!-- Icon set by JS -->
+    </button>
+  </div>
+</header>
+
+<!-- ===== LAYOUT ===== -->
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-nav" id="sidebar-nav">
+      <!-- Built by JS -->
+    </div>
+  </nav>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main" id="main">
+
+    <!-- ============================
+         PAGE: BROWSE (HOME)
+         ============================ -->
+    <div class="page active" id="page-browse">
+      <div class="content">
+        <div class="browse-header">
+          <h1 class="browse-title" id="browse-page-title">
+            <span>Browse World Cups</span>
+          </h1>
+          <div class="browse-filters">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-filter="latest">Latest</button>
+              <button class="filter-tab" data-filter="trending">
+                <span style="color:#ef4444;margin-right:3px">🔥</span> Trending
+              </button>
+              <button class="filter-tab" data-filter="most-played">Most Played</button>
+            </div>
+            <div class="type-filters">
+              <button class="type-badge type-all active" data-type="all"><span class="dot"></span>All</button>
+              <button class="type-badge type-image" data-type="image"><span class="dot"></span>Image</button>
+              <button class="type-badge type-video" data-type="video"><span class="dot"></span>Video</button>
+              <button class="type-badge type-text" data-type="text"><span class="dot"></span>Text</button>
+            </div>
+            <select class="lang-select" aria-label="Language">
+              <option>🌐 English</option>
+              <option>🌐 Spanish</option>
+              <option>🌐 French</option>
+              <option>🌐 Japanese</option>
+              <option>🌐 Korean</option>
+              <option>🌐 Arabic</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="quiz-grid" id="quiz-grid">
+          <!-- Quiz cards rendered by JS -->
+        </div>
+
+        <div class="load-more-container" id="load-more-container" style="display:none">
+          <button class="btn-load-more" id="btn-load-more">Load More Quizzes</button>
+        </div>
+      </div>
+      <!-- Footer inside page -->
+      <footer class="footer">
+        <div class="footer-inner">
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <div class="logo-icon">B</div>
+              <span>Brktz</span>
+            </div>
+            <p>Play tournament-style world cups on topics you love. Pick your favourite each round until one champion remains!</p>
+            <div class="footer-socials">
+              <a href="#" class="footer-social-btn" title="Facebook">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+              </a>
+              <a href="#" class="footer-social-btn" title="X / Twitter">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+              <a href="#" class="footer-social-btn" title="Instagram">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              </a>
+              <a href="#" class="footer-social-btn" title="Reddit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path fill="white" d="M20 12a2 2 0 0 0-3.37-1.44 9.86 9.86 0 0 0-5.15-1.6l.87-4.12 2.84.6a1.4 1.4 0 1 0 .14-.68l-3.17-.67a.27.27 0 0 0-.32.2L10.9 9.1a9.87 9.87 0 0 0-5.16 1.59A2 2 0 1 0 4.1 14a4 4 0 0 0 .07.7c0 3.17 3.5 5.73 7.83 5.73s7.83-2.56 7.83-5.73a4 4 0 0 0 .07-.7A2 2 0 0 0 20 12zm-13.4 1.2a1.2 1.2 0 1 1 1.2 1.2 1.2 1.2 0 0 1-1.2-1.2zm6.73 3.27a3.5 3.5 0 0 1-2.33.73 3.5 3.5 0 0 1-2.33-.73.27.27 0 0 1 .36-.4 3 3 0 0 0 1.97.6 3 3 0 0 0 1.97-.6.27.27 0 0 1 .36.4zm-.4-2.07a1.2 1.2 0 1 1 1.2-1.2 1.2 1.2 0 0 1-1.2 1.2z"/></svg>
+              </a>
+              <a href="#" class="footer-social-btn" title="Discord" style="background:#5865f2;border-color:#5865f2;color:white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.033.054a19.91 19.91 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+              </a>
+            </div>
+          </div>
+          <div>
+            <div class="footer-col-title">Quick Links</div>
+            <div class="footer-links">
+              <a href="#" onclick="navigate('about'); return false;">About</a>
+              <a href="#" onclick="navigate('support'); return false;">Support Us</a>
+              <a href="#" onclick="navigate('contact'); return false;">Contact</a>
+              <a href="#" onclick="navigate('create'); return false;">Create World Cup</a>
+            </div>
+          </div>
+          <div>
+            <div class="footer-col-title">Legal</div>
+            <div class="footer-links">
+              <a href="#" onclick="navigate('guidelines'); return false;">Community Guidelines</a>
+              <a href="#" onclick="navigate('terms'); return false;">Terms of Service</a>
+              <a href="#" onclick="navigate('privacy'); return false;">Privacy Policy</a>
+            </div>
+          </div>
+          <div>
+            <div class="footer-col-title">Community</div>
+            <div class="footer-links">
+              <a href="#">Discord Server</a>
+              <a href="#">Reddit</a>
+              <a href="#">Twitter / X</a>
+              <a href="#">Instagram</a>
+              <a href="#">Facebook</a>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>© 2026 Brktz. All rights reserved.</span>
+          <span>Made with ❤️ for quiz lovers everywhere</span>
+        </div>
+      </footer>
+    </div>
+
+    <!-- ============================
+         PAGE: QUIZ PLAY
+         ============================ -->
+    <div class="page" id="page-quiz">
+      <div class="content">
+        <div class="quiz-play-container">
+          <div id="quiz-play-content">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: CREATE QUIZ
+         ============================ -->
+    <div class="page" id="page-create">
+      <div class="content">
+        <div class="create-quiz-container">
+          <div class="create-quiz-header">
+            <h1 class="create-quiz-title">🏆 Create a World Cup</h1>
+            <p class="create-quiz-subtitle">Set up a tournament where players pick their favourite out of two options each round — until one champion remains!</p>
+          </div>
+
+          <form id="create-quiz-form">
+
+            <!-- Basic Info -->
+            <div class="form-card">
+              <div class="form-card-title">📋 Basic Information</div>
+              <div class="form-group">
+                <label class="form-label">World Cup Title <span class="required">*</span></label>
+                <input type="text" id="quiz-title-input" class="form-input" placeholder="e.g. Ultimate K-Pop Idol World Cup" maxlength="100">
+                <div class="form-hint">Make it catchy and descriptive (max 100 characters)</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" placeholder="Describe what your World Cup is about…" rows="3"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Category <span class="required">*</span></label>
+                  <select class="form-select" id="create-category-select">
+                    <option value="">Select a category…</option>
+                    <optgroup label="Entertainment">
+                      <option>K-Pop</option><option>Anime</option><option>Manga</option>
+                      <option>Movies</option><option>Music</option><option>Pokemon</option>
+                      <option>LOL</option><option>Streamers</option><option>Food</option>
+                    </optgroup>
+                    <optgroup label="People">
+                      <option>Anime Characters</option><option>Sports</option><option>Gaming</option>
+                      <option>People</option><option>Animals</option><option>Beauty</option>
+                    </optgroup>
+                    <optgroup label="Knowledge">
+                      <option>AI</option><option>Technology</option><option>Politics</option>
+                      <option>TV Shows</option><option>Fashion</option><option>Geography</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Language</label>
+                  <select class="form-select">
+                    <option>English</option><option>Spanish</option><option>French</option>
+                    <option>Japanese</option><option>Korean</option><option>Arabic</option>
+                    <option>Portuguese</option><option>German</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item Type -->
+            <div class="form-card">
+              <div class="form-card-title">🎯 Item Type</div>
+              <div class="type-selector">
+                <div class="type-option">
+                  <input type="radio" name="quiz-type" id="type-image" value="image" checked>
+                  <label for="type-image">
+                    <span class="type-icon">🖼️</span>
+                    Image Items
+                    <span style="font-size:0.72rem;color:var(--text-faint)">Each item has an image</span>
+                  </label>
+                </div>
+                <div class="type-option">
+                  <input type="radio" name="quiz-type" id="type-video" value="video">
+                  <label for="type-video">
+                    <span class="type-icon">🎥</span>
+                    Video Items
+                    <span style="font-size:0.72rem;color:var(--text-faint)">Link a YouTube clip per item</span>
+                  </label>
+                </div>
+                <div class="type-option">
+                  <input type="radio" name="quiz-type" id="type-text" value="text">
+                  <label for="type-text">
+                    <span class="type-icon">📝</span>
+                    Text Items
+                    <span style="font-size:0.72rem;color:var(--text-faint)">Text-only, no media needed</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thumbnail -->
+            <div class="form-card">
+              <div class="form-card-title">🖼️ Thumbnail</div>
+              <div class="form-group">
+                <input type="file" id="thumbnail-file-input" accept="image/*" style="display:none">
+                <div id="thumbnail-upload-area" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:2.5rem;text-align:center;cursor:pointer;transition:border-color var(--transition),background var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-light)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                  <div style="font-size:2rem;margin-bottom:0.5rem">📤</div>
+                  <div style="font-size:0.9rem;font-weight:500;margin-bottom:0.25rem">Click to upload thumbnail</div>
+                  <div style="font-size:0.78rem;color:var(--text-faint)">PNG, JPG, GIF up to 5MB (16:9 recommended)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Settings (before Items so size drives item count) -->
+            <div class="form-card">
+              <div class="form-card-title">⚙️ Settings</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Tournament Size</label>
+                  <select class="form-select" id="tournament-size-select">
+                    <option value="4">4 Items (2 rounds)</option>
+                    <option value="8" selected>8 Items (3 rounds)</option>
+                    <option value="16">16 Items (4 rounds)</option>
+                    <option value="32">32 Items (5 rounds)</option>
+                    <option value="64">64 Items (6 rounds)</option>
+                    <option value="128">128 Items (7 rounds)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Shuffle Order</label>
+                  <select class="form-select">
+                    <option>Yes — randomise each play</option>
+                    <option>No — fixed order</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Visibility</label>
+                  <select class="form-select">
+                    <option>Public</option>
+                    <option>Unlisted</option>
+                    <option>Private</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Allow Comments</label>
+                  <select class="form-select">
+                    <option>Yes</option>
+                    <option>No</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Items (count controlled by Tournament Size above) -->
+            <div class="form-card">
+              <div class="form-card-title">🏆 Tournament Items</div>
+              <div class="create-item-note">
+                Fill in each item below. Players will be shown two at a time and pick their favourite — no right or wrong answers!
+              </div>
+              <div class="question-list" id="item-list">
+                <!-- Built by JS -->
+              </div>
+            </div>
+
+            <div class="form-submit-row">
+              <button type="button" class="btn btn-outline" onclick="navigate('browse')">Cancel</button>
+              <button type="button" class="btn btn-outline">Save Draft</button>
+              <button type="submit" class="btn btn-primary">🚀 Publish World Cup</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: SEARCH
+         ============================ -->
+    <div class="page" id="page-search">
+      <div class="content">
+        <div class="search-header">
+          <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1rem">🔍 Search World Cups</h1>
+          <div class="search-bar">
+            <span class="search-bar-icon">🔍</span>
+            <input type="text" id="search-input-main" placeholder="Search world cups, creators, categories…" autocomplete="off">
+          </div>
+          <div class="search-results-label" id="search-results-label">Type something to search...</div>
+        </div>
+        <div class="quiz-grid" id="search-grid">
+          <!-- Results rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: ABOUT
+         ============================ -->
+    <div class="page" id="page-about">
+      <div class="content">
+        <div class="info-page">
+          <div class="info-hero">
+            <div class="info-hero-icon">🧠</div>
+            <h1 class="info-hero-title">About Brktz</h1>
+            <p class="info-hero-subtitle">Brktz is the ultimate quiz platform where passionate communities come together to create and discover quizzes on every topic imaginable.</p>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-card-icon">🏆</div>
+              <div class="info-card-title">1,000+ World Cups</div>
+              <div class="info-card-desc">Browse community-created tournaments on every topic imaginable</div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-icon">👥</div>
+              <div class="info-card-title">500K+ Players</div>
+              <div class="info-card-desc">Join a massive global community of quiz enthusiasts</div>
+            </div>
+            <div class="info-card">
+              <div class="info-card-icon">✍️</div>
+              <div class="info-card-title">Create for Free</div>
+              <div class="info-card-desc">Build and publish your own world cup tournaments with our easy tools</div>
+            </div>
+          </div>
+
+          <div class="prose">
+            <h2>Our Story</h2>
+            <p>Brktz started as a small project for fans who wanted a fun way to decide their favourites — from K-Pop idols to anime characters. The concept is simple: two options appear, you pick your favourite, and the winner advances. The last one standing is your personal champion.</p>
+
+            <h2>How It Works</h2>
+            <p>Every world cup is a single-elimination tournament where <em>you</em> decide who wins — based purely on personal preference. There are no right or wrong answers!</p>
+            <ul>
+              <li><strong>Round of 32 / 16 / 8 / 4</strong> — Choose your tournament size</li>
+              <li><strong>Two options shown at a time</strong> — Pick the one you prefer</li>
+              <li><strong>Winner advances, loser is eliminated</strong> — until one champion remains</li>
+              <li><strong>See your full bracket</strong> — Review every matchup after you finish</li>
+            </ul>
+
+            <h2>Our Mission</h2>
+            <p>We believe fandom should be fun. Our mission is to create the world's most engaging preference tournament platform, built by communities for communities. Every world cup is a chance to discover your true favourites and share them with others.</p>
+
+            <h2>Join the Community</h2>
+            <p>Follow us on social media, join our Discord server, and start creating quizzes today. Together we can build something amazing.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: SUPPORT CREATOR
+         ============================ -->
+    <div class="page" id="page-support">
+      <div class="content">
+        <div class="support-container">
+          <div class="support-hero">
+            <div class="support-hero-emoji">❤️</div>
+            <h1 class="support-hero-title">Support Brktz</h1>
+            <p class="support-hero-desc">Brktz is built and maintained with love. Your support helps us keep the servers running, improve features, and keep the platform free for everyone.</p>
+          </div>
+
+          <div class="support-tiers">
+            <div class="support-tier" onclick="selectTier(this, '$3')">
+              <div class="support-tier-emoji">☕</div>
+              <div class="support-tier-amount">$3</div>
+              <div class="support-tier-label">A coffee</div>
+            </div>
+            <div class="support-tier selected" onclick="selectTier(this, '$10')">
+              <div class="support-tier-emoji">🍕</div>
+              <div class="support-tier-amount">$10</div>
+              <div class="support-tier-label">Most Popular</div>
+            </div>
+            <div class="support-tier" onclick="selectTier(this, '$25')">
+              <div class="support-tier-emoji">🏆</div>
+              <div class="support-tier-amount">$25</div>
+              <div class="support-tier-label">Super Fan</div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-group">
+              <label class="form-label">Custom Amount</label>
+              <div style="display:flex;align-items:center;gap:0.5rem">
+                <span style="font-size:1.1rem;color:var(--text-muted)">$</span>
+                <input type="number" class="form-input" placeholder="Enter amount" min="1" style="flex:1">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Leave a message (optional)</label>
+              <textarea class="form-textarea" placeholder="Say something nice 😊" rows="2"></textarea>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem" onclick="showToast('Thank you for your support! 💙', 'success')">
+              ❤️ Support Brktz
+            </button>
+          </div>
+
+          <div style="text-align:center;font-size:0.82rem;color:var(--text-faint);margin-top:1rem">
+            Secure payment via Stripe. Every contribution is appreciated.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: CONTACT
+         ============================ -->
+    <div class="page" id="page-contact">
+      <div class="content">
+        <div class="contact-container">
+          <div class="contact-header">
+            <h1>📬 Contact Us</h1>
+            <p>Have a question, suggestion, or just want to say hi? We'd love to hear from you.</p>
+          </div>
+          <div class="contact-form">
+            <div class="form-group">
+              <label class="form-label">Your Name <span class="required">*</span></label>
+              <input type="text" class="form-input" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address <span class="required">*</span></label>
+              <input type="email" class="form-input" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subject <span class="required">*</span></label>
+              <select class="form-select">
+                <option value="">Select a topic…</option>
+                <option>General Question</option>
+                <option>Bug Report</option>
+                <option>Feature Request</option>
+                <option>Report Content</option>
+                <option>Business / Partnership</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Message <span class="required">*</span></label>
+              <textarea class="form-textarea" placeholder="Your message…" rows="5"></textarea>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem" onclick="showToast('Message sent! We\'ll get back to you soon.', 'success')">
+              ✉️ Send Message
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: COMMUNITY GUIDELINES
+         ============================ -->
+    <div class="page" id="page-guidelines">
+      <div class="content">
+        <div class="info-page">
+          <div class="prose">
+            <h2 style="font-size:1.4rem;margin-bottom:1.5rem">📜 Community Guidelines</h2>
+
+            <h2>Be Respectful</h2>
+            <p>Treat all members of the Brktz community with respect. Personal attacks, harassment, hate speech, or discriminatory content of any kind will not be tolerated.</p>
+
+            <h2>Create Original Content</h2>
+            <p>Only upload quizzes using content you own or have the right to use. Do not violate copyright laws or use copyrighted material without permission.</p>
+
+            <h2>Keep It Appropriate</h2>
+            <p>Brktz is for everyone. Do not post explicit, adult, or NSFW content. Keep quizzes appropriate for a general audience unless specifically marked for mature audiences.</p>
+
+            <h2>No Spam or Misleading Content</h2>
+            <p>Do not spam the platform with low-quality or misleading quizzes. Quiz titles and descriptions should accurately represent the content of the quiz.</p>
+
+            <h2>Report Violations</h2>
+            <p>If you see content that violates these guidelines, please use the report button or contact us directly. We review all reports and take appropriate action.</p>
+
+            <h2>Consequences</h2>
+            <p>Violations of these guidelines may result in content removal, temporary suspension, or permanent banning from the platform, depending on the severity of the violation.</p>
+
+            <p style="margin-top:1.5rem;font-size:0.82rem;color:var(--text-faint)">Last updated: March 2026</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: TERMS OF SERVICE
+         ============================ -->
+    <div class="page" id="page-terms">
+      <div class="content">
+        <div class="info-page">
+          <div class="prose">
+            <h2 style="font-size:1.4rem;margin-bottom:1.5rem">📄 Terms of Service</h2>
+
+            <h2>Acceptance of Terms</h2>
+            <p>By accessing or using Brktz, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our platform.</p>
+
+            <h2>User Accounts</h2>
+            <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to notify us immediately of any unauthorized use of your account.</p>
+
+            <h2>Content Ownership</h2>
+            <p>You retain ownership of content you create and upload to Brktz. By posting content, you grant Brktz a non-exclusive, royalty-free license to display and distribute your content on the platform.</p>
+
+            <h2>Prohibited Uses</h2>
+            <ul>
+              <li>Using the platform for any illegal purpose</li>
+              <li>Attempting to gain unauthorized access to the platform</li>
+              <li>Uploading malware or harmful code</li>
+              <li>Interfering with other users' use of the platform</li>
+              <li>Scraping or mass-collecting data without permission</li>
+            </ul>
+
+            <h2>Disclaimer of Warranties</h2>
+            <p>Brktz is provided "as is" without any warranties, expressed or implied. We do not guarantee that the service will be uninterrupted, error-free, or completely secure.</p>
+
+            <h2>Limitation of Liability</h2>
+            <p>Brktz shall not be liable for any indirect, incidental, special, or consequential damages resulting from your use of or inability to use the service.</p>
+
+            <h2>Changes to Terms</h2>
+            <p>We reserve the right to modify these terms at any time. We will notify users of significant changes. Continued use of the platform after changes constitutes acceptance of the new terms.</p>
+
+            <p style="margin-top:1.5rem;font-size:0.82rem;color:var(--text-faint)">Last updated: March 2026</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: PRIVACY POLICY
+         ============================ -->
+    <div class="page" id="page-privacy">
+      <div class="content">
+        <div class="info-page">
+          <div class="prose">
+            <h2 style="font-size:1.4rem;margin-bottom:1.5rem">🔒 Privacy Policy</h2>
+
+            <h2>Information We Collect</h2>
+            <p>We collect information you provide directly (account details, quiz content) and information collected automatically (usage data, cookies, device information).</p>
+
+            <h2>How We Use Your Information</h2>
+            <ul>
+              <li>To provide and improve our services</li>
+              <li>To personalize your experience</li>
+              <li>To communicate with you about updates and features</li>
+              <li>To detect and prevent fraud or abuse</li>
+              <li>To comply with legal obligations</li>
+            </ul>
+
+            <h2>Data Sharing</h2>
+            <p>We do not sell your personal information. We may share data with service providers who help us operate the platform, subject to confidentiality agreements.</p>
+
+            <h2>Cookies</h2>
+            <p>We use cookies and similar technologies to remember your preferences (such as theme and sidebar state), analyze usage, and improve user experience.</p>
+
+            <h2>Data Retention</h2>
+            <p>We retain your data for as long as your account is active or as needed to provide services. You can request deletion of your data at any time.</p>
+
+            <h2>Your Rights</h2>
+            <p>Depending on your location, you may have rights including: access to your data, correction, deletion, portability, and the right to object to processing.</p>
+
+            <h2>Contact Us</h2>
+            <p>If you have questions about this Privacy Policy, please contact us through our Contact page.</p>
+
+            <p style="margin-top:1.5rem;font-size:0.82rem;color:var(--text-faint)">Last updated: March 2026</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: SIGN IN
+         ============================ -->
+    <div class="page" id="page-signin">
+      <div class="content">
+        <div class="auth-container">
+          <div class="auth-card">
+            <div class="auth-header">
+              <div style="font-size:2.5rem;margin-bottom:0.5rem">👋</div>
+              <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:0.25rem">Welcome Back</h1>
+              <p style="color:var(--text-muted);font-size:0.9rem">Sign in to your Brktz account</p>
+            </div>
+            <form id="signin-form">
+              <div class="form-group">
+                <label class="form-label">Username or Email</label>
+                <input type="text" id="signin-username" class="form-input" placeholder="Enter your username or email" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="signin-password" class="form-input" placeholder="Enter your password" required>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem;margin-top:0.5rem">Sign In</button>
+            </form>
+            <div class="auth-footer">
+              Don't have an account? <a href="#" onclick="navigate('signup'); return false;">Sign Up</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: SIGN UP
+         ============================ -->
+    <div class="page" id="page-signup">
+      <div class="content">
+        <div class="auth-container">
+          <div class="auth-card">
+            <div class="auth-header">
+              <div style="font-size:2.5rem;margin-bottom:0.5rem">🎉</div>
+              <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:0.25rem">Create Account</h1>
+              <p style="color:var(--text-muted);font-size:0.9rem">Join Brktz and start creating World Cups</p>
+            </div>
+            <form id="signup-form">
+              <div class="form-group">
+                <label class="form-label">Username <span class="required">*</span></label>
+                <input type="text" id="signup-username" class="form-input" placeholder="Choose a username" required minlength="3" maxlength="20">
+                <div class="form-hint">3–20 characters, letters and numbers only</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email <span class="required">*</span></label>
+                <input type="email" id="signup-email" class="form-input" placeholder="your@email.com" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Password <span class="required">*</span></label>
+                <input type="password" id="signup-password" class="form-input" placeholder="Create a password (min 6 characters)" required minlength="6">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirm Password <span class="required">*</span></label>
+                <input type="password" id="signup-confirm" class="form-input" placeholder="Confirm your password" required>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem;margin-top:0.5rem">Create Account</button>
+            </form>
+            <div class="auth-footer">
+              Already have an account? <a href="#" onclick="navigate('signin'); return false;">Sign In</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: PROFILE
+         ============================ -->
+    <div class="page" id="page-profile">
+      <div class="content">
+        <div id="profile-content">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: MY QUIZZES
+         ============================ -->
+    <div class="page" id="page-my-quizzes">
+      <div class="content">
+        <div id="my-quizzes-content">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Modal (reusable) -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+  <div class="modal" id="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  // Extra helpers not in app.js
+  function selectTier(el, amount) {
+    document.querySelectorAll('.support-tier').forEach(t => t.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function openModal(title, body) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = body;
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  // Logo click
+  document.getElementById('logo-link').addEventListener('click', e => {
+    e.preventDefault();
+    navigate('browse');
+  });
+
+  // Keyboard shortcut: / to focus search
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      document.getElementById('header-search-input').focus();
+    }
+  });
+
+  // ESC to close modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+</body>
+</html>
