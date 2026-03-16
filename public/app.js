@@ -80,8 +80,26 @@ async function loadCurrentUser() {
 
 async function doSignUp(username, email, password) {
   try {
-    const { user, token } = await api('/auth/signup', {
+    const result = await api('/auth/signup', {
       method: 'POST', body: { username, email, password }
+    });
+    if (result.needsVerification) {
+      return { needsVerification: true, email: result.email };
+    }
+    setAuthToken(result.token);
+    state.currentUser = result.user;
+    updateAuthUI();
+    buildSidebar();
+    return { success: true };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+async function verifySignUp(email, code) {
+  try {
+    const { user, token } = await api('/auth/verify-signup', {
+      method: 'POST', body: { email, code }
     });
     setAuthToken(token);
     state.currentUser = user;
@@ -95,8 +113,26 @@ async function doSignUp(username, email, password) {
 
 async function doSignIn(usernameOrEmail, password) {
   try {
-    const { user, token } = await api('/auth/signin', {
+    const result = await api('/auth/signin', {
       method: 'POST', body: { usernameOrEmail, password }
+    });
+    if (result.needsVerification) {
+      return { needsVerification: true, email: result.email };
+    }
+    setAuthToken(result.token);
+    state.currentUser = result.user;
+    updateAuthUI();
+    buildSidebar();
+    return { success: true };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+async function verifySignIn(email, code) {
+  try {
+    const { user, token } = await api('/auth/verify-signin', {
+      method: 'POST', body: { email, code }
     });
     setAuthToken(token);
     state.currentUser = user;
@@ -128,14 +164,14 @@ function updateAuthUI() {
       <div class="user-menu" id="user-menu">
         <button class="user-menu-btn" id="user-menu-btn" type="button">
           <div class="user-avatar-sm">${initial}</div>
-          <span class="user-menu-name">${escHtml(user.username)}</span>
+          <span class="user-menu-name">${escHtml(user.username)}${user.is_admin ? ' <span class="admin-badge">ADMIN</span>' : ''}</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="user-dropdown" id="user-dropdown">
           <div class="user-dropdown-header">
             <div class="user-avatar-lg">${initial}</div>
             <div>
-              <div style="font-weight:600">${escHtml(user.username)}</div>
+              <div style="font-weight:600">${escHtml(user.username)}${user.is_admin ? ' <span class="admin-badge">ADMIN</span>' : ''}</div>
               <div style="font-size:0.75rem;color:var(--text-faint)">${escHtml(user.email)}</div>
             </div>
           </div>
@@ -1529,10 +1565,56 @@ function doSearch() {
 // ===========================
 // Auth Pages
 // ===========================
+function showVerificationInput(form, email, purpose) {
+  // Hide the original form fields
+  Array.from(form.querySelectorAll('.form-group, .auth-footer, button[type="submit"]')).forEach(el => el.style.display = 'none');
+
+  const sectionId = `${purpose}-verify-section`;
+  if (document.getElementById(sectionId)) return;
+
+  const section = document.createElement('div');
+  section.id = sectionId;
+  section.className = 'verify-section';
+  section.innerHTML = `
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:2rem;margin-bottom:0.5rem">📧</div>
+      <h3 style="margin-bottom:0.5rem">Check your email</h3>
+      <p style="color:var(--text-muted);font-size:0.9rem">We sent a 6-digit code to <strong>${escHtml(email)}</strong></p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Verification Code</label>
+      <input type="text" id="${purpose}-verify-code" class="form-input" placeholder="Enter 6-digit code" maxlength="6" style="text-align:center;font-size:1.5rem;letter-spacing:0.3em" autocomplete="one-time-code">
+    </div>
+    <button type="button" id="${purpose}-verify-btn" class="btn btn-primary" style="width:100%;margin-top:0.5rem">Verify & Continue</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.8rem;color:var(--text-faint)">Code expires in 10 minutes</p>
+  `;
+  form.appendChild(section);
+
+  const codeInput = document.getElementById(`${purpose}-verify-code`);
+  codeInput.focus();
+
+  document.getElementById(`${purpose}-verify-btn`).addEventListener('click', async () => {
+    const code = codeInput.value.trim();
+    if (code.length !== 6) { showToast('Please enter the 6-digit code', 'error'); return; }
+
+    const verifyFn = purpose === 'signup' ? verifySignUp : verifySignIn;
+    const result = await verifyFn(email, code);
+    if (result.error) { showToast(result.error, 'error'); return; }
+    showToast(purpose === 'signup'
+      ? `Welcome to Brktz, ${escHtml(state.currentUser.username)}!`
+      : `Welcome back, ${escHtml(state.currentUser.username)}!`, 'success');
+    navigate('browse');
+  });
+}
+
 function renderSignIn() {
   const form = $('signin-form');
   if (!form) return;
   form.reset();
+  // Remove any previous verification UI
+  const existingVerify = document.getElementById('signin-verify-section');
+  if (existingVerify) existingVerify.remove();
+
   form.onsubmit = async e => {
     e.preventDefault();
     const username = $('signin-username').value.trim();
@@ -1540,6 +1622,11 @@ function renderSignIn() {
     if (!username || !password) { showToast('Please fill in all fields', 'error'); return; }
     const result = await doSignIn(username, password);
     if (result.error) { showToast(result.error, 'error'); return; }
+    if (result.needsVerification) {
+      showToast('Verification code sent to your email!', 'success');
+      showVerificationInput(form, result.email, 'signin');
+      return;
+    }
     showToast(`Welcome back, ${escHtml(state.currentUser.username)}!`, 'success');
     navigate('browse');
   };
@@ -1549,6 +1636,9 @@ function renderSignUp() {
   const form = $('signup-form');
   if (!form) return;
   form.reset();
+  const existingVerify = document.getElementById('signup-verify-section');
+  if (existingVerify) existingVerify.remove();
+
   form.onsubmit = async e => {
     e.preventDefault();
     const username = $('signup-username').value.trim();
@@ -1561,6 +1651,11 @@ function renderSignUp() {
     if (password !== confirm) { showToast('Passwords do not match', 'error'); return; }
     const result = await doSignUp(username, email, password);
     if (result.error) { showToast(result.error, 'error'); return; }
+    if (result.needsVerification) {
+      showToast('Verification code sent to your email!', 'success');
+      showVerificationInput(form, result.email, 'signup');
+      return;
+    }
     showToast(`Welcome to Brktz, ${escHtml(username)}!`, 'success');
     navigate('browse');
   };
@@ -1594,7 +1689,7 @@ function renderProfile() {
       <div class="profile-header-card">
         <div class="profile-avatar">${initial}</div>
         <div class="profile-info">
-          <h1 class="profile-username">${escHtml(user.username)}</h1>
+          <h1 class="profile-username">${escHtml(user.username)}${user.is_admin ? ' <span class="admin-badge">ADMIN</span>' : ''}</h1>
           <div class="profile-email">${escHtml(user.email)}</div>
           <div class="profile-joined">Joined ${user.created_at ? timeAgo(new Date(user.created_at + 'Z').getTime()) : 'recently'}</div>
         </div>

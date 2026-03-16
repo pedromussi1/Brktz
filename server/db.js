@@ -61,6 +61,20 @@ db.exec(`
   );
 `);
 
+// Verification codes for MFA
+db.exec(`
+  CREATE TABLE IF NOT EXISTS verification_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    code TEXT NOT NULL,
+    purpose TEXT NOT NULL,
+    payload TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL,
+    used INTEGER DEFAULT 0
+  );
+`);
+
 // Migration: add is_admin column if missing (for existing databases)
 try {
   db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`);
