@@ -1,7 +1,7 @@
 {
   "name": "brktz",
   "version": "1.0.0",
-  "description": "Ideal Type World Cup tournament bracket platform",
+  "description": "Ideal Type Quiz tournament bracket platform",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

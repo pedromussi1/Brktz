@@ -17,6 +17,7 @@ function formatQuiz(row, items, likedByUser = false) {
     title: row.title,
     description: row.description,
     creator: creator ? creator.username : 'Anonymous',
+    creator_id: row.creator_id,
     type: row.item_type,
     category: row.category,
     thumbnail: row.thumbnail,
@@ -115,14 +116,73 @@ router.post('/', requireAuth, (req, res) => {
   res.status(201).json({ quiz: formatQuiz(row, dbItems) });
 });
 
-// DELETE /api/quizzes/:id — delete a quiz (owner only)
+// DELETE /api/quizzes/:id — delete a quiz (owner or admin)
 router.delete('/:id', requireAuth, (req, res) => {
   const row = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Quiz not found' });
-  if (row.creator_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+  if (row.creator_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'Not authorized' });
 
   db.prepare('DELETE FROM quizzes WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+// PATCH /api/quizzes/:id — edit a quiz (owner or admin)
+router.patch('/:id', requireAuth, (req, res) => {
+  const row = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Quiz not found' });
+  if (row.creator_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'Not authorized' });
+
+  const { title, description, type, category, thumbnail, items } = req.body;
+
+  if (title !== undefined) {
+    if (typeof title !== 'string' || title.trim().length === 0) return res.status(400).json({ error: 'Title is required' });
+    if (title.length > 200) return res.status(400).json({ error: 'Title must be under 200 characters' });
+  }
+  if (items !== undefined) {
+    if (!Array.isArray(items) || items.length < 4) return res.status(400).json({ error: 'At least 4 items are required' });
+    if (items.length > 128) return res.status(400).json({ error: 'Maximum 128 items allowed' });
+    for (const item of items) {
+      if (!item.name || typeof item.name !== 'string' || item.name.trim().length === 0) {
+        return res.status(400).json({ error: 'All items must have a name' });
+      }
+    }
+  }
+
+  const validTypes = ['image', 'video', 'text'];
+  const validCategories = ['kpop', 'gaming', 'entertainment', 'food', 'anime', 'other'];
+
+  const updateQuiz = db.transaction(() => {
+    db.prepare(`
+      UPDATE quizzes SET
+        title = ?,
+        description = ?,
+        item_type = ?,
+        category = ?,
+        thumbnail = ?
+      WHERE id = ?
+    `).run(
+      (title || row.title).trim(),
+      (description !== undefined ? description : row.description || '').slice(0, 2000),
+      validTypes.includes(type) ? type : row.item_type,
+      validCategories.includes(category) ? category : row.category,
+      thumbnail !== undefined ? (thumbnail || '') : row.thumbnail,
+      row.id
+    );
+
+    if (items) {
+      db.prepare('DELETE FROM quiz_items WHERE quiz_id = ?').run(row.id);
+      const insertItem = db.prepare('INSERT INTO quiz_items (quiz_id, name, image_url, video_url, position) VALUES (?, ?, ?, ?, ?)');
+      items.forEach((item, i) => {
+        insertItem.run(row.id, item.name.trim().slice(0, 200), (item.image || '').slice(0, 500), (item.video || '').slice(0, 500), i);
+      });
+    }
+  });
+
+  updateQuiz();
+
+  const updated = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(row.id);
+  const dbItems = db.prepare('SELECT * FROM quiz_items WHERE quiz_id = ? ORDER BY position').all(row.id);
+  res.json({ quiz: formatQuiz(updated, dbItems) });
 });
 
 // POST /api/quizzes/:id/like — toggle like

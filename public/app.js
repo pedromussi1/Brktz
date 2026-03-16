@@ -144,7 +144,7 @@ function updateAuthUI() {
             <span>👤</span> My Profile
           </a>
           <a class="user-dropdown-item" href="#" onclick="navigate('my-quizzes'); closeUserDropdown(); return false;">
-            <span>🏆</span> My World Cups
+            <span>🏆</span> My Quizzes
           </a>
           <div class="user-dropdown-divider"></div>
           <a class="user-dropdown-item" href="#" onclick="doSignOut(); return false;">
@@ -296,11 +296,49 @@ const state = {
 // ===========================
 // Navigation / Pages
 // ===========================
+function buildUrl(page, data) {
+  switch (page) {
+    case 'browse': return data.category ? `/?category=${data.category}` : '/';
+    case 'search': return data.q ? `/search?q=${encodeURIComponent(data.q)}` : '/search';
+    case 'quiz': return `/quiz/${data.id}`;
+    case 'edit': return `/edit/${data.id}`;
+    case 'create': return '/create';
+    case 'signin': return '/signin';
+    case 'signup': return '/signup';
+    case 'profile': return '/profile';
+    case 'my-quizzes': return '/my-quizzes';
+    default: return `/${page}`;
+  }
+}
+
+function parseUrl() {
+  const path = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+  if (path.startsWith('/quiz/')) return { page: 'quiz', data: { id: path.slice(6) } };
+  if (path.startsWith('/edit/')) return { page: 'edit', data: { id: path.slice(6) } };
+  if (path === '/create') return { page: 'create', data: {} };
+  if (path === '/signin') return { page: 'signin', data: {} };
+  if (path === '/signup') return { page: 'signup', data: {} };
+  if (path === '/profile') return { page: 'profile', data: {} };
+  if (path === '/my-quizzes') return { page: 'my-quizzes', data: {} };
+  if (path === '/search') return { page: 'search', data: { q: params.get('q') || '' } };
+  // Default: browse
+  const category = params.get('category');
+  return { page: 'browse', data: category ? { category } : {} };
+}
+
+let _skipPushState = false;
+
 function navigate(page, data = {}) {
   nprogress();
   state.currentPage = page;
   state.currentCategory = data.category || null;
   state.searchQuery = data.q || '';
+
+  // Push browser history (skip when handling popstate)
+  if (!_skipPushState) {
+    history.pushState({ page, data }, '', buildUrl(page, data));
+  }
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const target = document.getElementById(`page-${page}`);
@@ -316,6 +354,7 @@ function navigate(page, data = {}) {
     case 'search': renderSearch(data.q); break;
     case 'quiz': renderQuizLobby(data.id); break;
     case 'create': renderCreateQuiz(); break;
+    case 'edit': renderEditQuiz(data.id); break;
     case 'signin': renderSignIn(); break;
     case 'signup': renderSignUp(); break;
     case 'profile': renderProfile(); break;
@@ -325,6 +364,13 @@ function navigate(page, data = {}) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   closeMobileSidebar();
+}
+
+/** Helper: can current user edit this quiz? */
+function canEditQuiz(quiz) {
+  if (!state.currentUser) return false;
+  if (state.currentUser.is_admin) return true;
+  return quiz.creator_id === state.currentUser.id;
 }
 
 // ===========================
@@ -387,10 +433,10 @@ function renderBrowse() {
   const titleEl = $('browse-page-title');
   if (titleEl) {
     if (state.currentCategory) {
-      titleEl.textContent = state.currentCategory + ' World Cups';
+      titleEl.textContent = state.currentCategory + ' Quizzes';
     } else {
-      const labels = { latest: 'Latest World Cups', trending: 'Trending Now', 'most-played': 'Most Played' };
-      titleEl.textContent = labels[state.currentFilter] || 'Browse World Cups';
+      const labels = { latest: 'Latest Quizzes', trending: 'Trending Now', 'most-played': 'Most Played' };
+      titleEl.textContent = labels[state.currentFilter] || 'Browse Quizzes';
     }
   }
 }
@@ -432,6 +478,10 @@ function createQuizCard(quiz) {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           Share
         </button>
+        ${canEditQuiz(quiz) ? `<button class="quiz-card-action-btn" onclick="event.stopPropagation(); navigate('edit', {id:'${quiz.id}'})">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+          Edit
+        </button>` : ''}
       </div>
     </div>
   `;
@@ -455,7 +505,12 @@ async function toggleLike(e, id) {
       quiz.likes += liked ? 1 : -1;
     }
     showToast(liked ? 'Added to favorites!' : 'Removed from favorites', liked ? 'success' : 'info');
-    renderBrowse();
+    if (state.currentPage === 'quiz') {
+      // Update like button in lobby without full re-render
+      renderQuizLobby(id);
+    } else {
+      renderBrowse();
+    }
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -463,8 +518,9 @@ async function toggleLike(e, id) {
 
 function shareQuiz(e, id) {
   e.stopPropagation();
+  const url = window.location.origin + '/quiz/' + id;
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(window.location.href.split('?')[0] + '?quiz=' + id);
+    navigator.clipboard.writeText(url);
   }
   showToast('Link copied to clipboard!', 'success');
 }
@@ -625,6 +681,7 @@ function renderQuizLobby(id) {
           ♥ ${formatNumber(quiz.likes)} Likes
         </button>
         <button class="btn btn-outline" onclick="shareQuiz(event, '${quiz.id}')">⤴ Share</button>
+        ${canEditQuiz(quiz) ? `<button class="btn btn-outline" onclick="navigate('edit', {id:'${quiz.id}'})">✏️ Edit</button>` : ''}
       </div>
     </div>
 
@@ -665,7 +722,7 @@ function renderQuizLobby(id) {
         </div>
 
         <button class="lobby-start-btn" id="lobby-start-btn" onclick="startTournament()">
-          ▶ &nbsp;Start World Cup
+          ▶ &nbsp;Start Quiz
         </button>
       </div>
     </div>
@@ -880,7 +937,7 @@ function startTournamentFromLobby() {
 
 function shareResult(name, quizId) {
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(`My champion in "${QUIZ_DATA.find(q=>q.id===quizId)?.title}" is "${name}"! Play at ${window.location.href.split('?')[0]}?quiz=${quizId}`);
+    navigator.clipboard.writeText(`My champion in "${QUIZ_DATA.find(q=>q.id===quizId)?.title}" is "${name}"! Play at ${window.location.origin}/quiz/${quizId}`);
   }
   showToast('Result copied to clipboard!', 'success');
 }
@@ -1094,13 +1151,13 @@ async function submitCreateQuiz(e) {
   e.preventDefault();
 
   if (!state.currentUser) {
-    showToast('Please sign in to create a World Cup', 'error');
+    showToast('Please sign in to create a Quiz', 'error');
     navigate('signin');
     return;
   }
 
   const title = document.getElementById('quiz-title-input').value.trim();
-  if (!title) { showToast('Please enter a World Cup title', 'error'); return; }
+  if (!title) { showToast('Please enter a Quiz title', 'error'); return; }
 
   const emptyNames = createItems.filter(it => !it.name.trim());
   if (emptyNames.length) {
@@ -1166,10 +1223,256 @@ async function submitCreateQuiz(e) {
   const quiz = await saveUserQuiz(quizPayload);
   if (!quiz) return;
 
-  showToast('World Cup created! 🎉', 'success');
+  showToast('Quiz created! 🎉', 'success');
   createThumbnailData = null;
   await loadAllQuizzes();
   setTimeout(() => navigate('quiz', { id: quiz.id }), 400);
+}
+
+// ===========================
+// Edit Quiz Page
+// ===========================
+let editQuizId = null;
+let editItems = [];
+let editItemNextId = 1;
+let editItemType = 'image';
+let editThumbnailData = null;
+
+function renderEditQuiz(id) {
+  const quiz = QUIZ_DATA.find(q => q.id === id || q.id === String(id));
+  if (!quiz) { showToast('Quiz not found', 'error'); navigate('browse'); return; }
+  if (!canEditQuiz(quiz)) { showToast('Not authorized to edit this quiz', 'error'); navigate('browse'); return; }
+
+  editQuizId = quiz.id;
+  editItemType = quiz.type;
+  editThumbnailData = null;
+  editItemNextId = 1;
+  editItems = quiz.items.map(item => ({
+    id: editItemNextId++,
+    name: item.name,
+    image: item.image || '',
+    imageData: null,
+    videoUrl: item.video || '',
+  }));
+
+  // Fill in form fields
+  const titleInput = $('edit-quiz-title-input');
+  if (titleInput) titleInput.value = quiz.title;
+  const descInput = $('edit-quiz-description');
+  if (descInput) descInput.value = quiz.description || '';
+  const catSelect = $('edit-category-select');
+  if (catSelect) catSelect.value = quiz.category;
+
+  // Set item type radio
+  const typeRadio = document.getElementById(`edit-type-${editItemType}`);
+  if (typeRadio) typeRadio.checked = true;
+
+  // Show current thumbnail
+  const thumbArea = $('edit-thumbnail-upload-area');
+  if (thumbArea) {
+    if (quiz.thumbnail) {
+      thumbArea.style.padding = '1rem';
+      thumbArea.innerHTML = `
+        <img src="${quiz.thumbnail}" style="max-height:130px;max-width:100%;border-radius:var(--radius-sm);object-fit:cover;display:block;margin:0 auto 0.5rem">
+        <div style="font-size:0.78rem;color:var(--text-faint)">Click to change</div>`;
+    } else {
+      thumbArea.style.padding = '2.5rem';
+      thumbArea.innerHTML = `
+        <div style="font-size:2rem;margin-bottom:0.5rem">📤</div>
+        <div style="font-size:0.9rem;font-weight:500;margin-bottom:0.25rem">Click to upload thumbnail</div>
+        <div style="font-size:0.78rem;color:var(--text-faint)">PNG, JPG, GIF up to 5MB</div>`;
+    }
+  }
+
+  renderEditItemList();
+  wireEditThumbnailUpload();
+  wireEditItemTypeRadios();
+
+  // Wire form submit
+  const form = $('edit-quiz-form');
+  if (form) form.onsubmit = submitEditQuiz;
+}
+
+function wireEditThumbnailUpload() {
+  const area = $('edit-thumbnail-upload-area');
+  const fileInput = $('edit-thumbnail-file-input');
+  if (!area || !fileInput) return;
+  area.onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      editThumbnailData = ev.target.result;
+      area.style.padding = '1rem';
+      area.innerHTML = `
+        <img src="${ev.target.result}" style="max-height:130px;max-width:100%;border-radius:var(--radius-sm);object-fit:cover;display:block;margin:0 auto 0.5rem">
+        <div style="font-size:0.78rem;color:var(--text-faint)">${escHtml(file.name)} — click to change</div>`;
+      area.onclick = () => fileInput.click();
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+function wireEditItemTypeRadios() {
+  ['edit-type-image', 'edit-type-video', 'edit-type-text'].forEach(id => {
+    const radio = document.getElementById(id);
+    if (!radio) return;
+    radio.onchange = () => {
+      if (radio.checked) { editItemType = radio.value; renderEditItemList(); }
+    };
+  });
+}
+
+function renderEditItemList() {
+  const list = $('edit-item-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  editItems.forEach((item, idx) => {
+    const div = el('div', 'question-item');
+
+    let mediaColHtml = '';
+    if (editItemType === 'image') {
+      const currentImg = item.imageData || item.image;
+      const preview = currentImg
+        ? `<img src="${currentImg}" style="max-height:64px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 0.25rem">
+           <div style="font-size:0.7rem;color:var(--text-faint)">Click to change</div>`
+        : `<div style="font-size:1.5rem;margin-bottom:0.2rem">📷</div>
+           <div style="font-size:0.75rem;font-weight:500">Click to upload</div>`;
+      mediaColHtml = `
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Image</label>
+          <input type="file" id="edit-item-file-${item.id}" accept="image/*" style="display:none">
+          <div id="edit-item-img-zone-${item.id}" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:0.6rem;text-align:center;cursor:pointer;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:border-color var(--transition),background var(--transition)">
+            ${preview}
+          </div>
+          <input type="text" class="form-input" data-item-id="${item.id}" data-field="image"
+            placeholder="…or paste image URL" value="${escHtml(item.image)}" style="margin-top:0.4rem;font-size:0.8rem">
+        </div>`;
+    } else if (editItemType === 'video') {
+      mediaColHtml = `
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">YouTube URL</label>
+          <input type="text" class="form-input" data-item-id="${item.id}" data-field="videoUrl"
+            placeholder="https://youtube.com/watch?v=…" value="${escHtml(item.videoUrl)}">
+        </div>`;
+    }
+
+    const cols = editItemType === 'text' ? '1fr' : '1fr 1fr';
+    div.innerHTML = `
+      <div class="question-item-header">
+        <span style="display:flex;align-items:center;gap:0.5rem">
+          <span class="q-num">${idx + 1}</span>
+          Item ${idx + 1}
+        </span>
+      </div>
+      <div style="display:grid;grid-template-columns:${cols};gap:0.75rem;">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Name / Title</label>
+          <input type="text" class="form-input" data-item-id="${item.id}" data-field="name"
+            placeholder="e.g. Pikachu, BTS Jimin, Pizza…" value="${escHtml(item.name)}">
+        </div>
+        ${mediaColHtml}
+      </div>
+    `;
+
+    div.querySelectorAll('input[data-item-id]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const it = editItems.find(x => x.id === item.id);
+        if (it) it[inp.dataset.field] = inp.value;
+      });
+    });
+
+    if (editItemType === 'image') {
+      const fileInp = div.querySelector(`#edit-item-file-${item.id}`);
+      const zone = div.querySelector(`#edit-item-img-zone-${item.id}`);
+      if (fileInp && zone) {
+        zone.addEventListener('click', () => fileInp.click());
+        fileInp.addEventListener('change', () => {
+          const file = fileInp.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            const it = editItems.find(x => x.id === item.id);
+            if (it) { it.imageData = ev.target.result; it.image = ''; }
+            const urlInp = div.querySelector('input[data-field="image"]');
+            if (urlInp) urlInp.value = '';
+            zone.innerHTML = `
+              <img src="${ev.target.result}" style="max-height:64px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 0.25rem">
+              <div style="font-size:0.7rem;color:var(--text-faint)">Click to change</div>`;
+            zone.addEventListener('click', () => fileInp.click());
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    }
+
+    list.appendChild(div);
+  });
+}
+
+async function submitEditQuiz(e) {
+  e.preventDefault();
+
+  const title = $('edit-quiz-title-input').value.trim();
+  if (!title) { showToast('Please enter a title', 'error'); return; }
+
+  const emptyNames = editItems.filter(it => !it.name.trim());
+  if (emptyNames.length) {
+    showToast(`Item ${editItems.indexOf(emptyNames[0]) + 1} is missing a name`, 'error');
+    return;
+  }
+
+  const category = $('edit-category-select').value;
+  const description = $('edit-quiz-description').value.trim();
+
+  // Upload new images
+  const processedItems = [];
+  for (const item of editItems) {
+    let imageUrl = item.image || '';
+    if (item.imageData && item.imageData.startsWith('data:')) {
+      try {
+        const blob = await fetch(item.imageData).then(r => r.blob());
+        const formData = new FormData();
+        formData.append('image', blob, `item-${item.id}.jpg`);
+        const result = await api('/upload', { method: 'POST', body: formData });
+        imageUrl = result.url;
+      } catch (err) {
+        console.error('Upload failed for item', item.id, err);
+      }
+    }
+    processedItems.push({ name: item.name.trim(), image: imageUrl, video: item.videoUrl || '' });
+  }
+
+  // Upload thumbnail if changed
+  let thumbnailUrl = undefined; // undefined = keep existing
+  if (editThumbnailData && editThumbnailData.startsWith('data:')) {
+    try {
+      const blob = await fetch(editThumbnailData).then(r => r.blob());
+      const formData = new FormData();
+      formData.append('image', blob, 'thumbnail.jpg');
+      const result = await api('/upload', { method: 'POST', body: formData });
+      thumbnailUrl = result.url;
+    } catch (err) {
+      console.error('Thumbnail upload failed:', err);
+    }
+  }
+
+  const payload = {
+    title, description, type: editItemType, category,
+    items: processedItems,
+  };
+  if (thumbnailUrl !== undefined) payload.thumbnail = thumbnailUrl;
+
+  try {
+    await api(`/quizzes/${editQuizId}`, { method: 'PATCH', body: payload });
+    showToast('Quiz updated!', 'success');
+    await loadAllQuizzes();
+    navigate('quiz', { id: editQuizId });
+  } catch (err) {
+    showToast(err.message || 'Failed to update quiz', 'error');
+  }
 }
 
 // ===========================
@@ -1298,7 +1601,7 @@ function renderProfile() {
         <div class="profile-stats-row">
           <div class="profile-stat">
             <div class="profile-stat-num">${userQuizzes.length}</div>
-            <div class="profile-stat-label">World Cups</div>
+            <div class="profile-stat-label">Quizzes</div>
           </div>
           <div class="profile-stat">
             <div class="profile-stat-num">${formatNumber(totalPlays)}</div>
@@ -1312,7 +1615,7 @@ function renderProfile() {
       </div>
 
       ${userQuizzes.length > 0 ? `
-        <h2 style="font-size:1.2rem;font-weight:700;margin:1.5rem 0 1rem">My World Cups</h2>
+        <h2 style="font-size:1.2rem;font-weight:700;margin:1.5rem 0 1rem">My Quizzes</h2>
         <div class="quiz-grid">
           ${userQuizzes.map(q => {
             const card = createQuizCard(q);
@@ -1322,7 +1625,7 @@ function renderProfile() {
       ` : `
         <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted)">
           <div style="font-size:2rem;margin-bottom:0.75rem">🏆</div>
-          <p>You haven't created any World Cups yet.</p>
+          <p>You haven't created any Quizzes yet.</p>
           <button class="btn btn-primary" style="margin-top:1rem" onclick="navigate('create')">Create Your First</button>
         </div>
       `}
@@ -1340,7 +1643,7 @@ function renderMyQuizzes() {
         <div class="auth-card" style="text-align:center">
           <div style="font-size:2.5rem;margin-bottom:1rem">🔒</div>
           <h2 style="margin-bottom:0.5rem">Sign in required</h2>
-          <p style="color:var(--text-muted);margin-bottom:1.5rem">Sign in to manage your World Cups.</p>
+          <p style="color:var(--text-muted);margin-bottom:1.5rem">Sign in to manage your Quizzes.</p>
           <button class="btn btn-primary" onclick="navigate('signin')">Sign In</button>
         </div>
       </div>`;
@@ -1352,7 +1655,7 @@ function renderMyQuizzes() {
   container.innerHTML = `
     <div class="my-quizzes-container">
       <div class="my-quizzes-header">
-        <h1 style="font-size:1.4rem;font-weight:700">🏆 My World Cups</h1>
+        <h1 style="font-size:1.4rem;font-weight:700">🏆 My Quizzes</h1>
         <button class="btn btn-primary" onclick="navigate('create')">+ Create New</button>
       </div>
 
@@ -1369,6 +1672,7 @@ function renderMyQuizzes() {
               </div>
               <div class="my-quiz-actions">
                 <button class="btn btn-outline btn-sm" onclick="navigate('quiz', {id:'${q.id}'})">Play</button>
+                <button class="btn btn-outline btn-sm" onclick="navigate('edit', {id:'${q.id}'})">Edit</button>
                 <button class="btn btn-outline btn-sm" style="color:var(--warning)" onclick="confirmDeleteQuiz('${q.id}')">Delete</button>
               </div>
             </div>`;
@@ -1377,7 +1681,7 @@ function renderMyQuizzes() {
       ` : `
         <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted)">
           <div style="font-size:2rem;margin-bottom:0.75rem">📝</div>
-          <p>No World Cups yet. Create your first one!</p>
+          <p>No Quizzes yet. Create your first one!</p>
         </div>
       `}
     </div>`;
@@ -1389,7 +1693,7 @@ async function confirmDeleteQuiz(id) {
   if (confirm(`Delete "${quiz.title}"? This cannot be undone.`)) {
     const success = await deleteUserQuiz(id);
     if (success) {
-      showToast('World Cup deleted', 'info');
+      showToast('Quiz deleted', 'info');
       renderMyQuizzes();
     }
   }
@@ -1484,7 +1788,7 @@ function buildSidebar() {
 
   if (state.currentUser) {
     bottomItems.unshift({ icon: '👤', label: 'My Profile', page: 'profile' });
-    bottomItems.unshift({ icon: '🏆', label: 'My World Cups', page: 'my-quizzes' });
+    bottomItems.unshift({ icon: '🏆', label: 'My Quizzes', page: 'my-quizzes' });
   } else {
     bottomItems.unshift({ icon: '🔑', label: 'Sign In', page: 'signin' });
   }
@@ -1578,6 +1882,14 @@ async function init() {
   const createForm = $('create-quiz-form');
   if (createForm) createForm.addEventListener('submit', submitCreateQuiz);
 
+  // Browser back/forward button
+  window.addEventListener('popstate', (e) => {
+    const s = e.state || parseUrl();
+    _skipPushState = true;
+    navigate(s.page, s.data || {});
+    _skipPushState = false;
+  });
+
   const searchMain = $('search-input-main');
   if (searchMain) {
     let searchPageTimer = null;
@@ -1600,12 +1912,13 @@ async function init() {
 
   document.addEventListener('click', () => closeUserDropdown());
 
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('quiz')) {
-    navigate('quiz', { id: urlParams.get('quiz') });
-  } else {
-    navigate('browse');
-  }
+  // Parse initial URL and navigate
+  const initial = parseUrl();
+  // Replace current history entry so back button works correctly
+  history.replaceState({ page: initial.page, data: initial.data }, '', buildUrl(initial.page, initial.data));
+  _skipPushState = true;
+  navigate(initial.page, initial.data);
+  _skipPushState = false;
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -4,7 +4,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
 /** Creates a JWT token for a user */
 function signToken(user) {
-  return jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ id: user.id, username: user.username, is_admin: user.is_admin || 0 }, JWT_SECRET, { expiresIn: '7d' });
 }
 
 /** Middleware: requires valid JWT in Authorization header. Sets req.user. */
@@ -35,4 +35,10 @@ function optionalAuth(req, res, next) {
   next();
 }
 
-module.exports = { signToken, requireAuth, optionalAuth };
+/** Check if an email should be granted admin on signup */
+function isAdminEmail(email) {
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  return adminEmails.includes(email.toLowerCase());
+}
+
+module.exports = { signToken, requireAuth, optionalAuth, isAdminEmail };

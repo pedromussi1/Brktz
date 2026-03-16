@@ -20,8 +20,10 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    is_admin INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
 
   CREATE TABLE IF NOT EXISTS quizzes (
     id TEXT PRIMARY KEY,
@@ -58,5 +60,10 @@ db.exec(`
     FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
   );
 `);
+
+// Migration: add is_admin column if missing (for existing databases)
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0`);
+} catch (_e) { /* column already exists */ }
 
 module.exports = db;

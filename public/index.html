@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Brktz — World Cup Tournaments</title>
-  <meta name="description" content="Play tournament-style world cups on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
-  <meta property="og:title" content="Brktz — World Cup Tournaments">
-  <meta property="og:description" content="Play tournament-style world cups on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
+  <title>Brktz — Quiz Tournaments</title>
+  <meta name="description" content="Play tournament-style quizzes on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
+  <meta property="og:title" content="Brktz — Quiz Tournaments">
+  <meta property="og:description" content="Play tournament-style quizzes on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%233b82f6'/><text y='.9em' font-size='72' x='12' fill='white' font-weight='900'>B</text></svg>">
   <link rel="stylesheet" href="styles.css">
@@ -39,7 +39,7 @@
     <span class="search-icon">
       <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     </span>
-    <input type="text" id="header-search-input" placeholder="Search world cups, creators, categories…" autocomplete="off">
+    <input type="text" id="header-search-input" placeholder="Search quizzes, creators, categories…" autocomplete="off">
   </div>
 
   <!-- Actions -->
@@ -61,6 +61,11 @@
   </div>
 </header>
 
+<!-- Ad Banner: Top -->
+<div class="ad-banner" id="ad-banner-top">
+  <span class="ad-banner-label">Advertisement</span>
+</div>
+
 <!-- ===== LAYOUT ===== -->
 <div class="layout">
 
@@ -68,6 +73,9 @@
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-nav" id="sidebar-nav">
       <!-- Built by JS -->
+    </div>
+    <div class="ad-banner ad-banner-sidebar" id="ad-banner-sidebar">
+      <span class="ad-banner-label">Ad</span>
     </div>
   </nav>
 
@@ -81,7 +89,7 @@
       <div class="content">
         <div class="browse-header">
           <h1 class="browse-title" id="browse-page-title">
-            <span>Browse World Cups</span>
+            <span>Browse Quizzes</span>
           </h1>
           <div class="browse-filters">
             <div class="filter-tabs">
@@ -108,6 +116,10 @@
           </div>
         </div>
 
+        <div class="ad-banner ad-banner-feed" id="ad-banner-feed">
+          <span class="ad-banner-label">Advertisement</span>
+        </div>
+
         <div class="quiz-grid" id="quiz-grid">
           <!-- Quiz cards rendered by JS -->
         </div>
@@ -124,7 +136,7 @@
               <div class="logo-icon">B</div>
               <span>Brktz</span>
             </div>
-            <p>Play tournament-style world cups on topics you love. Pick your favourite each round until one champion remains!</p>
+            <p>Play tournament-style quizzes on topics you love. Pick your favourite each round until one champion remains!</p>
             <div class="footer-socials">
               <a href="#" class="footer-social-btn" title="Facebook">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
@@ -149,7 +161,7 @@
               <a href="#" onclick="navigate('about'); return false;">About</a>
               <a href="#" onclick="navigate('support'); return false;">Support Us</a>
               <a href="#" onclick="navigate('contact'); return false;">Contact</a>
-              <a href="#" onclick="navigate('create'); return false;">Create World Cup</a>
+              <a href="#" onclick="navigate('create'); return false;">Create Quiz</a>
             </div>
           </div>
           <div>
@@ -198,7 +210,7 @@
       <div class="content">
         <div class="create-quiz-container">
           <div class="create-quiz-header">
-            <h1 class="create-quiz-title">🏆 Create a World Cup</h1>
+            <h1 class="create-quiz-title">🏆 Create a Quiz</h1>
             <p class="create-quiz-subtitle">Set up a tournament where players pick their favourite out of two options each round — until one champion remains!</p>
           </div>
 
@@ -208,13 +220,13 @@
             <div class="form-card">
               <div class="form-card-title">📋 Basic Information</div>
               <div class="form-group">
-                <label class="form-label">World Cup Title <span class="required">*</span></label>
-                <input type="text" id="quiz-title-input" class="form-input" placeholder="e.g. Ultimate K-Pop Idol World Cup" maxlength="100">
+                <label class="form-label">Quiz Title <span class="required">*</span></label>
+                <input type="text" id="quiz-title-input" class="form-input" placeholder="e.g. Ultimate K-Pop Idol Quiz" maxlength="100">
                 <div class="form-hint">Make it catchy and descriptive (max 100 characters)</div>
               </div>
               <div class="form-group">
                 <label class="form-label">Description</label>
-                <textarea class="form-textarea" placeholder="Describe what your World Cup is about…" rows="3"></textarea>
+                <textarea class="form-textarea" placeholder="Describe what your Quiz is about…" rows="3"></textarea>
               </div>
               <div class="form-row">
                 <div class="form-group">
@@ -347,7 +359,7 @@
             <div class="form-submit-row">
               <button type="button" class="btn btn-outline" onclick="navigate('browse')">Cancel</button>
               <button type="button" class="btn btn-outline">Save Draft</button>
-              <button type="submit" class="btn btn-primary">🚀 Publish World Cup</button>
+              <button type="submit" class="btn btn-primary">🚀 Publish Quiz</button>
             </div>
 
           </form>
@@ -361,10 +373,10 @@
     <div class="page" id="page-search">
       <div class="content">
         <div class="search-header">
-          <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1rem">🔍 Search World Cups</h1>
+          <h1 style="font-size:1.4rem;font-weight:700;margin-bottom:1rem">🔍 Search Quizzes</h1>
           <div class="search-bar">
             <span class="search-bar-icon">🔍</span>
-            <input type="text" id="search-input-main" placeholder="Search world cups, creators, categories…" autocomplete="off">
+            <input type="text" id="search-input-main" placeholder="Search quizzes, creators, categories…" autocomplete="off">
           </div>
           <div class="search-results-label" id="search-results-label">Type something to search...</div>
         </div>
@@ -389,7 +401,7 @@
           <div class="info-grid">
             <div class="info-card">
               <div class="info-card-icon">🏆</div>
-              <div class="info-card-title">1,000+ World Cups</div>
+              <div class="info-card-title">1,000+ Quizzes</div>
               <div class="info-card-desc">Browse community-created tournaments on every topic imaginable</div>
             </div>
             <div class="info-card">
@@ -400,7 +412,7 @@
             <div class="info-card">
               <div class="info-card-icon">✍️</div>
               <div class="info-card-title">Create for Free</div>
-              <div class="info-card-desc">Build and publish your own world cup tournaments with our easy tools</div>
+              <div class="info-card-desc">Build and publish your own quiz tournaments with our easy tools</div>
             </div>
           </div>
 
@@ -409,7 +421,7 @@
             <p>Brktz started as a small project for fans who wanted a fun way to decide their favourites — from K-Pop idols to anime characters. The concept is simple: two options appear, you pick your favourite, and the winner advances. The last one standing is your personal champion.</p>
 
             <h2>How It Works</h2>
-            <p>Every world cup is a single-elimination tournament where <em>you</em> decide who wins — based purely on personal preference. There are no right or wrong answers!</p>
+            <p>Every quiz is a single-elimination tournament where <em>you</em> decide who wins — based purely on personal preference. There are no right or wrong answers!</p>
             <ul>
               <li><strong>Round of 32 / 16 / 8 / 4</strong> — Choose your tournament size</li>
               <li><strong>Two options shown at a time</strong> — Pick the one you prefer</li>
@@ -418,7 +430,7 @@
             </ul>
 
             <h2>Our Mission</h2>
-            <p>We believe fandom should be fun. Our mission is to create the world's most engaging preference tournament platform, built by communities for communities. Every world cup is a chance to discover your true favourites and share them with others.</p>
+            <p>We believe fandom should be fun. Our mission is to create the world's most engaging preference tournament platform, built by communities for communities. Every quiz is a chance to discover your true favourites and share them with others.</p>
 
             <h2>Join the Community</h2>
             <p>Follow us on social media, join our Discord server, and start creating quizzes today. Together we can build something amazing.</p>
@@ -682,7 +694,7 @@
             <div class="auth-header">
               <div style="font-size:2.5rem;margin-bottom:0.5rem">🎉</div>
               <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:0.25rem">Create Account</h1>
-              <p style="color:var(--text-muted);font-size:0.9rem">Join Brktz and start creating World Cups</p>
+              <p style="color:var(--text-muted);font-size:0.9rem">Join Brktz and start creating Quizzes</p>
             </div>
             <form id="signup-form">
               <div class="form-group">
@@ -730,6 +742,109 @@
       <div class="content">
         <div id="my-quizzes-content">
           <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PAGE: EDIT QUIZ
+         ============================ -->
+    <div class="page" id="page-edit">
+      <div class="content">
+        <div class="create-quiz-container">
+          <div class="create-quiz-header">
+            <h1 class="create-quiz-title">✏️ Edit Quiz</h1>
+            <p class="create-quiz-subtitle">Update this quiz's title, items, images, and settings.</p>
+          </div>
+
+          <form id="edit-quiz-form">
+            <!-- Basic Info -->
+            <div class="form-card">
+              <div class="form-card-title">📋 Basic Information</div>
+              <div class="form-group">
+                <label class="form-label">Quiz Title <span class="required">*</span></label>
+                <input type="text" id="edit-quiz-title-input" class="form-input" placeholder="e.g. Ultimate K-Pop Idol Quiz" maxlength="100">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="edit-quiz-description" placeholder="Describe what your Quiz is about…" rows="3"></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Category <span class="required">*</span></label>
+                  <select class="form-select" id="edit-category-select">
+                    <option value="">Select a category…</option>
+                    <optgroup label="Entertainment">
+                      <option value="kpop">K-Pop</option><option value="anime">Anime</option>
+                      <option value="gaming">Gaming</option><option value="entertainment">Entertainment</option>
+                      <option value="food">Food</option>
+                    </optgroup>
+                    <optgroup label="Other">
+                      <option value="other">Other</option>
+                    </optgroup>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item Type -->
+            <div class="form-card">
+              <div class="form-card-title">🎯 Item Type</div>
+              <div class="type-selector">
+                <div class="type-option">
+                  <input type="radio" name="edit-quiz-type" id="edit-type-image" value="image" checked>
+                  <label for="edit-type-image">
+                    <span class="type-icon">🖼️</span>
+                    Image Items
+                  </label>
+                </div>
+                <div class="type-option">
+                  <input type="radio" name="edit-quiz-type" id="edit-type-video" value="video">
+                  <label for="edit-type-video">
+                    <span class="type-icon">🎥</span>
+                    Video Items
+                  </label>
+                </div>
+                <div class="type-option">
+                  <input type="radio" name="edit-quiz-type" id="edit-type-text" value="text">
+                  <label for="edit-type-text">
+                    <span class="type-icon">📝</span>
+                    Text Items
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thumbnail -->
+            <div class="form-card">
+              <div class="form-card-title">🖼️ Thumbnail</div>
+              <div class="form-group">
+                <input type="file" id="edit-thumbnail-file-input" accept="image/*" style="display:none">
+                <div id="edit-thumbnail-upload-area" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:2.5rem;text-align:center;cursor:pointer;transition:border-color var(--transition),background var(--transition);" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-light)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+                  <div style="font-size:2rem;margin-bottom:0.5rem">📤</div>
+                  <div style="font-size:0.9rem;font-weight:500;margin-bottom:0.25rem">Click to upload thumbnail</div>
+                  <div style="font-size:0.78rem;color:var(--text-faint)">PNG, JPG, GIF up to 5MB (16:9 recommended)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tournament Items -->
+            <div class="form-card">
+              <div class="form-card-title">🏆 Tournament Items</div>
+              <div class="create-item-note">
+                Update each item below. You can change names and images.
+              </div>
+              <div class="question-list" id="edit-item-list">
+                <!-- Built by JS -->
+              </div>
+            </div>
+
+            <div class="form-submit-row">
+              <button type="button" class="btn btn-outline" onclick="navigate('browse')">Cancel</button>
+              <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+            </div>
+
+          </form>
         </div>
       </div>
     </div>

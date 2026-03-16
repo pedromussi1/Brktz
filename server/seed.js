@@ -1,5 +1,5 @@
 /**
- * Seeds the database with the 12 default world cups.
+ * Seeds the database with the 12 default quizzes.
  * Run once: node server/seed.js
  * Safe to re-run — skips if quizzes already exist.
  */
@@ -7,7 +7,7 @@ const db = require('./db');
 
 const SEED_QUIZZES = [
   {
-    id: 'seed-1', title: 'K-Pop Idol World Cup', creator: 'kpopmaster99',
+    id: 'seed-1', title: 'K-Pop Idol Quiz', creator: 'kpopmaster99',
     type: 'image', category: 'kpop', thumbnail: 'https://picsum.photos/seed/kpop1/480/270',
     plays: 48200, items: [
       { name: 'BTS – Jimin', image: 'https://picsum.photos/seed/bts_jimin/400/400' },
@@ -29,7 +29,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-2', title: 'Anime Character World Cup', creator: 'otaku_lord',
+    id: 'seed-2', title: 'Anime Character Quiz', creator: 'otaku_lord',
     type: 'image', category: 'anime', thumbnail: 'https://picsum.photos/seed/anime_wc/480/270',
     plays: 91500, items: [
       { name: 'Naruto Uzumaki', image: 'https://picsum.photos/seed/naruto/400/400' },
@@ -51,7 +51,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-3', title: 'Best Food World Cup', creator: 'foodie_culture',
+    id: 'seed-3', title: 'Best Food Quiz', creator: 'foodie_culture',
     type: 'image', category: 'food', thumbnail: 'https://picsum.photos/seed/food_wc/480/270',
     plays: 38700, items: [
       { name: 'Ramen', image: 'https://picsum.photos/seed/ramen/400/400' },
@@ -65,7 +65,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-4', title: 'League of Legends Champion World Cup', creator: 'lolpro_euw',
+    id: 'seed-4', title: 'League of Legends Champion Quiz', creator: 'lolpro_euw',
     type: 'image', category: 'gaming', thumbnail: 'https://picsum.photos/seed/lol_wc/480/270',
     plays: 67300, items: [
       { name: 'Jinx', image: 'https://picsum.photos/seed/jinx/400/400' },
@@ -87,7 +87,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-5', title: 'Best Pokemon World Cup', creator: 'pokefanatic',
+    id: 'seed-5', title: 'Best Pokemon Quiz', creator: 'pokefanatic',
     type: 'image', category: 'gaming', thumbnail: 'https://picsum.photos/seed/poke_wc/480/270',
     plays: 134000, items: [
       { name: 'Charizard', image: 'https://picsum.photos/seed/charizard/400/400' },
@@ -109,7 +109,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-6', title: 'Best Movie World Cup', creator: 'cinephile_x',
+    id: 'seed-6', title: 'Best Movie Quiz', creator: 'cinephile_x',
     type: 'image', category: 'entertainment', thumbnail: 'https://picsum.photos/seed/movie_wc/480/270',
     plays: 74200, items: [
       { name: 'The Dark Knight', image: 'https://picsum.photos/seed/darknight/400/400' },
@@ -123,7 +123,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-7', title: 'Streamer Face-Off World Cup', creator: 'twitchtracker',
+    id: 'seed-7', title: 'Streamer Face-Off Quiz', creator: 'twitchtracker',
     type: 'image', category: 'entertainment', thumbnail: 'https://picsum.photos/seed/stream_wc/480/270',
     plays: 55600, items: [
       { name: 'xQc', image: 'https://picsum.photos/seed/xqc/400/400' },
@@ -159,7 +159,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-9', title: 'Best Country World Cup', creator: 'geoquiz_world',
+    id: 'seed-9', title: 'Best Country Quiz', creator: 'geoquiz_world',
     type: 'image', category: 'other', thumbnail: 'https://picsum.photos/seed/country_wc/480/270',
     plays: 29400, items: [
       { name: 'Japan', image: 'https://picsum.photos/seed/japan/400/400' },
@@ -173,7 +173,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-10', title: 'Best TV Show World Cup', creator: 'tvshow_buff',
+    id: 'seed-10', title: 'Best TV Show Quiz', creator: 'tvshow_buff',
     type: 'image', category: 'entertainment', thumbnail: 'https://picsum.photos/seed/tv_wc/480/270',
     plays: 88900, items: [
       { name: 'Breaking Bad', image: 'https://picsum.photos/seed/breakbad/400/400' },
@@ -187,7 +187,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-11', title: 'Gaming Console World Cup', creator: 'techquiz_ai',
+    id: 'seed-11', title: 'Gaming Console Quiz', creator: 'techquiz_ai',
     type: 'image', category: 'gaming', thumbnail: 'https://picsum.photos/seed/console_wc/480/270',
     plays: 22300, items: [
       { name: 'PlayStation 5', image: 'https://picsum.photos/seed/ps5/400/400' },
@@ -197,7 +197,7 @@ const SEED_QUIZZES = [
     ]
   },
   {
-    id: 'seed-12', title: 'BLACKPINK Song World Cup', creator: 'hallyuwave',
+    id: 'seed-12', title: 'BLACKPINK Song Quiz', creator: 'hallyuwave',
     type: 'image', category: 'kpop', thumbnail: 'https://picsum.photos/seed/bp_wc/480/270',
     plays: 44600, items: [
       { name: 'How You Like That', image: 'https://picsum.photos/seed/hylt/400/400' },
