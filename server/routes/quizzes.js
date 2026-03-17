@@ -203,4 +203,126 @@ router.post('/:id/play', (req, res) => {
   res.json({ success: true });
 });
 
+// ── Comments ──
+
+// GET /api/quizzes/:id/comments
+router.get('/:id/comments', (req, res) => {
+  const comments = db.prepare(`
+    SELECT c.id, c.body, c.created_at, c.user_id, u.username
+    FROM comments c
+    JOIN users u ON c.user_id = u.id
+    WHERE c.quiz_id = ?
+    ORDER BY c.created_at DESC
+  `).all(req.params.id);
+
+  res.json({ comments: comments.map(c => ({
+    id: c.id,
+    body: c.body,
+    userId: c.user_id,
+    username: c.username,
+    createdAt: new Date(c.created_at + 'Z').getTime(),
+  }))});
+});
+
+// POST /api/quizzes/:id/comments
+router.post('/:id/comments', requireAuth, (req, res) => {
+  const { body } = req.body;
+  if (!body || typeof body !== 'string' || body.trim().length === 0) {
+    return res.status(400).json({ error: 'Comment cannot be empty' });
+  }
+  if (body.length > 2000) return res.status(400).json({ error: 'Comment too long (max 2000 chars)' });
+
+  const quiz = db.prepare('SELECT id, allow_comments FROM quizzes WHERE id = ?').get(req.params.id);
+  if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+  if (!quiz.allow_comments) return res.status(403).json({ error: 'Comments are disabled for this quiz' });
+
+  const result = db.prepare('INSERT INTO comments (quiz_id, user_id, body) VALUES (?, ?, ?)').run(req.params.id, req.user.id, body.trim());
+  const comment = db.prepare(`
+    SELECT c.id, c.body, c.created_at, c.user_id, u.username
+    FROM comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?
+  `).get(result.lastInsertRowid);
+
+  res.status(201).json({ comment: {
+    id: comment.id, body: comment.body, userId: comment.user_id,
+    username: comment.username, createdAt: new Date(comment.created_at + 'Z').getTime(),
+  }});
+});
+
+// DELETE /api/quizzes/:id/comments/:commentId
+router.delete('/:id/comments/:commentId', requireAuth, (req, res) => {
+  const comment = db.prepare('SELECT * FROM comments WHERE id = ? AND quiz_id = ?').get(req.params.commentId, req.params.id);
+  if (!comment) return res.status(404).json({ error: 'Comment not found' });
+  if (comment.user_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'Not authorized' });
+
+  db.prepare('DELETE FROM comments WHERE id = ?').run(req.params.commentId);
+  res.json({ success: true });
+});
+
+// ── Leaderboard / Results ──
+
+// POST /api/quizzes/:id/result — record tournament champion
+router.post('/:id/result', optionalAuth, (req, res) => {
+  const { championItemId, tournamentSize } = req.body;
+  if (!championItemId || !tournamentSize) return res.status(400).json({ error: 'championItemId and tournamentSize are required' });
+
+  db.prepare('INSERT INTO tournament_results (quiz_id, champion_item_id, user_id, tournament_size) VALUES (?, ?, ?, ?)')
+    .run(req.params.id, championItemId, req.user?.id || null, tournamentSize);
+  res.json({ success: true });
+});
+
+// GET /api/quizzes/:id/leaderboard — champion win stats
+router.get('/:id/leaderboard', (req, res) => {
+  const totalResults = db.prepare('SELECT COUNT(*) as cnt FROM tournament_results WHERE quiz_id = ?').get(req.params.id).cnt;
+
+  const leaders = db.prepare(`
+    SELECT qi.id, qi.name, qi.image_url, COUNT(*) as wins
+    FROM tournament_results tr
+    JOIN quiz_items qi ON tr.champion_item_id = qi.id
+    WHERE tr.quiz_id = ?
+    GROUP BY tr.champion_item_id
+    ORDER BY wins DESC
+    LIMIT 20
+  `).all(req.params.id);
+
+  res.json({
+    totalResults,
+    leaders: leaders.map(l => ({
+      id: l.id, name: l.name, image: l.image_url || '',
+      wins: l.wins, winPct: totalResults > 0 ? Math.round(l.wins * 1000 / totalResults) / 10 : 0,
+    })),
+  });
+});
+
+// ── Bookmarks ──
+
+// GET /api/quizzes/bookmarked — list user's bookmarked quizzes
+router.get('/bookmarked/list', requireAuth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT q.* FROM bookmarks b
+    JOIN quizzes q ON b.quiz_id = q.id
+    WHERE b.user_id = ?
+    ORDER BY b.created_at DESC
+  `).all(req.user.id);
+
+  const quizzes = rows.map(row => {
+    const items = db.prepare('SELECT * FROM quiz_items WHERE quiz_id = ? ORDER BY position').all(row.id);
+    const liked = !!db.prepare('SELECT 1 FROM likes WHERE user_id = ? AND quiz_id = ?').get(req.user.id, row.id);
+    return formatQuiz(row, items, liked);
+  });
+
+  res.json({ quizzes });
+});
+
+// POST /api/quizzes/:id/bookmark — toggle bookmark
+router.post('/:id/bookmark', requireAuth, (req, res) => {
+  const existing = db.prepare('SELECT 1 FROM bookmarks WHERE user_id = ? AND quiz_id = ?').get(req.user.id, req.params.id);
+  if (existing) {
+    db.prepare('DELETE FROM bookmarks WHERE user_id = ? AND quiz_id = ?').run(req.user.id, req.params.id);
+    res.json({ bookmarked: false });
+  } else {
+    db.prepare('INSERT INTO bookmarks (user_id, quiz_id) VALUES (?, ?)').run(req.user.id, req.params.id);
+    res.json({ bookmarked: true });
+  }
+});
+
 module.exports = router;

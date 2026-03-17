@@ -343,6 +343,8 @@ function buildUrl(page, data) {
     case 'signup': return '/signup';
     case 'profile': return '/profile';
     case 'my-quizzes': return '/my-quizzes';
+    case 'user-profile': return `/user/${encodeURIComponent(data.username)}`;
+    case 'bookmarks': return '/bookmarks';
     default: return `/${page}`;
   }
 }
@@ -357,6 +359,8 @@ function parseUrl() {
   if (path === '/signup') return { page: 'signup', data: {} };
   if (path === '/profile') return { page: 'profile', data: {} };
   if (path === '/my-quizzes') return { page: 'my-quizzes', data: {} };
+  if (path === '/bookmarks') return { page: 'bookmarks', data: {} };
+  if (path.startsWith('/user/')) return { page: 'user-profile', data: { username: decodeURIComponent(path.slice(6)) } };
   if (path === '/search') return { page: 'search', data: { q: params.get('q') || '' } };
   // Default: browse
   const category = params.get('category');
@@ -395,6 +399,9 @@ function navigate(page, data = {}) {
     case 'signup': renderSignUp(); break;
     case 'profile': renderProfile(); break;
     case 'my-quizzes': renderMyQuizzes(); break;
+    case 'user-profile': renderUserProfile(data.username); break;
+    case 'bookmarks': renderBookmarks(); break;
+    case 'contact': renderContactPage(); break;
     default: break;
   }
 
@@ -493,7 +500,7 @@ function createQuizCard(quiz) {
     <div class="quiz-card-body">
       <div class="quiz-card-title">${quiz.title}</div>
       <div class="quiz-card-meta">
-        <span class="quiz-card-creator">@${quiz.creator}</span>
+        <span class="quiz-card-creator" onclick="event.stopPropagation(); navigate('user-profile', {username:'${escHtml(quiz.creator)}'})">@${quiz.creator}</span>
         <span class="quiz-card-time">${timeAgo(quiz.createdAt)}</span>
       </div>
       <div class="quiz-card-stats">
@@ -651,6 +658,7 @@ function pickWinner(winnerIndex) {
     t.roundName = getTournamentRoundName(t.currentRound.length);
   }
 
+  saveTournamentProgress();
   renderTournamentMatch();
 }
 
@@ -669,6 +677,7 @@ function undoPick() {
   t.roundName    = snap.roundName;
   t.done         = snap.done;
   t.champion     = snap.champion;
+  saveTournamentProgress();
   renderTournamentMatch();
 }
 
@@ -681,13 +690,11 @@ function renderQuizLobby(id) {
   state.currentQuiz = quiz;
   state.tournament = null;
 
-  // Increment play count (fire and forget)
-  api(`/quizzes/${quiz.id}/play`, { method: 'POST' }).catch(() => {});
-
   const container = $('quiz-play-content');
   if (!container) return;
 
   const sizes = [4, 8, 16, 32, 64, 128].filter(s => s <= quiz.items.length);
+  const savedProgress = loadTournamentProgress(quiz.id);
 
   container.innerHTML = `
     <!-- Breadcrumb -->
@@ -703,7 +710,7 @@ function renderQuizLobby(id) {
     <div class="quiz-play-header">
       <h1 class="quiz-play-title">${quiz.title}</h1>
       <div class="quiz-play-info">
-        <span>By <a class="creator" href="#">@${quiz.creator}</a></span>
+        <span>By <a class="creator" href="#" onclick="navigate('user-profile', {username:'${escHtml(quiz.creator)}'}); return false;">@${quiz.creator}</a></span>
         <span>•</span>
         <span>${quiz.items.length} Items</span>
         <span>•</span>
@@ -772,8 +779,28 @@ function renderQuizLobby(id) {
       <div class="quiz-stat-row"><span class="label">Type</span><span class="value">${quiz.type.charAt(0).toUpperCase() + quiz.type.slice(1)}</span></div>
       <div class="quiz-stat-row"><span class="label">Category</span><span class="value">${quiz.category}</span></div>
       <div class="quiz-stat-row"><span class="label">Created</span><span class="value">${timeAgo(quiz.createdAt)}</span></div>
+      <button class="btn btn-outline btn-sm" style="width:100%;margin-top:0.75rem" onclick="toggleBookmark(event, '${quiz.id}')">🔖 Bookmark</button>
     </div>
+
+    ${savedProgress ? `
+    <div class="lobby-resume-banner">
+      <div class="resume-info">
+        <strong>Tournament in progress!</strong>
+        <span>${savedProgress.history.length} / ${savedProgress.size - 1} matches · ${savedProgress.roundName}</span>
+      </div>
+      <div class="resume-actions">
+        <button class="btn btn-primary btn-sm" onclick="resumeTournament()">▶ Resume</button>
+        <button class="btn btn-outline btn-sm" onclick="discardProgress('${quiz.id}')">Discard</button>
+      </div>
+    </div>` : ''}
+
+    <div id="quiz-leaderboard"></div>
+    <div id="quiz-comments"></div>
   `;
+
+  // Load leaderboard and comments
+  loadLeaderboard(quiz.id);
+  loadComments(quiz.id);
 }
 
 function selectTournamentSize(btn) {
@@ -785,6 +812,8 @@ function startTournament() {
   const selectedBtn = document.querySelector('.lobby-size-btn.selected');
   const size = selectedBtn ? parseInt(selectedBtn.dataset.size) : 8;
   state.tournament = buildTournament(state.currentQuiz, size);
+  // Increment play count on fresh start
+  api(`/quizzes/${state.currentQuiz.id}/play`, { method: 'POST' }).catch(() => {});
   renderTournamentMatch();
 }
 
@@ -911,6 +940,13 @@ function renderTournamentWinner() {
   const champion = t.champion;
   const container = $('quiz-play-content');
   if (!container) return;
+
+  // Record result and clear saved progress
+  clearTournamentProgress(t.quizId);
+  api(`/quizzes/${t.quizId}/result`, {
+    method: 'POST',
+    body: { championItemId: champion.id, tournamentSize: t.size }
+  }).catch(() => {});
 
   const roundGroups = {};
   t.history.forEach(h => {
@@ -1882,6 +1918,7 @@ function buildSidebar() {
   ];
 
   if (state.currentUser) {
+    bottomItems.unshift({ icon: '🔖', label: 'Bookmarks', page: 'bookmarks' });
     bottomItems.unshift({ icon: '👤', label: 'My Profile', page: 'profile' });
     bottomItems.unshift({ icon: '🏆', label: 'My Quizzes', page: 'my-quizzes' });
   } else {
@@ -1916,6 +1953,322 @@ function setTypeFilter(type) {
     t.classList.toggle('active', t.dataset.type === type);
   });
   renderBrowse();
+}
+
+// ===========================
+// Contact Form
+// ===========================
+function renderContactPage() {
+  // Auto-fill name/email if logged in
+  if (state.currentUser) {
+    const nameInput = $('contact-name');
+    const emailInput = $('contact-email');
+    if (nameInput && !nameInput.value) nameInput.value = state.currentUser.username;
+    if (emailInput && !emailInput.value) emailInput.value = state.currentUser.email;
+  }
+}
+
+async function submitContactForm(e) {
+  e.preventDefault();
+  const name = $('contact-name').value.trim();
+  const email = $('contact-email').value.trim();
+  const subject = $('contact-subject').value;
+  const message = $('contact-message').value.trim();
+
+  if (!name || !email || !subject || !message) {
+    showToast('Please fill in all fields', 'error');
+    return;
+  }
+
+  try {
+    await api('/contact', { method: 'POST', body: { name, email, subject, message } });
+    showToast('Message sent! We\'ll get back to you soon.', 'success');
+    $('contact-form').reset();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ===========================
+// Public User Profiles
+// ===========================
+async function renderUserProfile(username) {
+  const container = $('user-profile-content');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)">Loading profile...</div>';
+
+  try {
+    const data = await api(`/users/${encodeURIComponent(username)}`);
+    const initial = data.username.charAt(0).toUpperCase();
+
+    container.innerHTML = `
+      <div class="profile-container">
+        <div class="profile-header-card">
+          <div class="profile-avatar">${initial}</div>
+          <div class="profile-info">
+            <h1 class="profile-username">${escHtml(data.username)}</h1>
+            <div class="profile-joined">Joined ${timeAgo(data.joinedAt)}</div>
+          </div>
+          <div class="profile-stats-row">
+            <div class="profile-stat">
+              <div class="profile-stat-num">${data.quizzesCount}</div>
+              <div class="profile-stat-label">Quizzes</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-num">${formatNumber(data.totalPlays)}</div>
+              <div class="profile-stat-label">Total Plays</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-num">${formatNumber(data.totalLikes)}</div>
+              <div class="profile-stat-label">Total Likes</div>
+            </div>
+          </div>
+        </div>
+
+        ${data.quizzes.length > 0 ? `
+          <h2 style="font-size:1.2rem;font-weight:700;margin:1.5rem 0 1rem">Quizzes by ${escHtml(data.username)}</h2>
+          <div class="quiz-grid">
+            ${data.quizzes.map(q => createQuizCard(q).outerHTML).join('')}
+          </div>
+        ` : `
+          <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted)">
+            <div style="font-size:2rem;margin-bottom:0.75rem">🏆</div>
+            <p>${escHtml(data.username)} hasn't created any quizzes yet.</p>
+          </div>
+        `}
+      </div>`;
+  } catch (err) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:3rem;color:var(--text-muted)">
+        <div style="font-size:2rem;margin-bottom:0.75rem">😕</div>
+        <p>User not found.</p>
+        <button class="btn btn-primary" style="margin-top:1rem" onclick="navigate('browse')">Browse Quizzes</button>
+      </div>`;
+  }
+}
+
+// ===========================
+// Comments
+// ===========================
+async function loadComments(quizId) {
+  const container = $('quiz-comments');
+  if (!container) return;
+
+  try {
+    const { comments } = await api(`/quizzes/${quizId}/comments`);
+    const user = state.currentUser;
+
+    container.innerHTML = `
+      <div class="comments-section">
+        <h3 class="comments-title">💬 Comments (${comments.length})</h3>
+        ${user ? `
+          <div class="comment-form">
+            <div class="comment-form-avatar">${user.username.charAt(0).toUpperCase()}</div>
+            <textarea id="comment-input" class="form-textarea" placeholder="Add a comment..." rows="2" style="flex:1;margin:0"></textarea>
+            <button class="btn btn-primary btn-sm" onclick="submitComment('${quizId}')">Post</button>
+          </div>
+        ` : `
+          <div class="comment-signin-prompt">
+            <a href="#" onclick="navigate('signin'); return false;">Sign in</a> to leave a comment
+          </div>
+        `}
+        <div class="comments-list">
+          ${comments.length === 0 ? '<div class="comments-empty">No comments yet. Be the first!</div>' : ''}
+          ${comments.map(c => `
+            <div class="comment-item">
+              <div class="comment-avatar" onclick="navigate('user-profile', {username:'${escHtml(c.username)}'})">${c.username.charAt(0).toUpperCase()}</div>
+              <div class="comment-content">
+                <div class="comment-header">
+                  <span class="comment-username" onclick="navigate('user-profile', {username:'${escHtml(c.username)}'})">@${escHtml(c.username)}</span>
+                  <span class="comment-time">${timeAgo(c.createdAt)}</span>
+                  ${(user && (user.id === c.userId || user.is_admin)) ? `<button class="comment-delete" onclick="deleteComment('${quizId}', ${c.id})">✕</button>` : ''}
+                </div>
+                <div class="comment-body">${escHtml(c.body)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  } catch (err) {
+    container.innerHTML = '';
+  }
+}
+
+async function submitComment(quizId) {
+  const input = $('comment-input');
+  if (!input) return;
+  const body = input.value.trim();
+  if (!body) { showToast('Comment cannot be empty', 'error'); return; }
+
+  try {
+    await api(`/quizzes/${quizId}/comments`, { method: 'POST', body: { body } });
+    input.value = '';
+    loadComments(quizId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function deleteComment(quizId, commentId) {
+  if (!confirm('Delete this comment?')) return;
+  try {
+    await api(`/quizzes/${quizId}/comments/${commentId}`, { method: 'DELETE' });
+    loadComments(quizId);
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// ===========================
+// Leaderboard
+// ===========================
+async function loadLeaderboard(quizId) {
+  const container = $('quiz-leaderboard');
+  if (!container) return;
+
+  try {
+    const { totalResults, leaders } = await api(`/quizzes/${quizId}/leaderboard`);
+
+    if (totalResults === 0) {
+      container.innerHTML = `
+        <div class="leaderboard-section">
+          <h3 class="leaderboard-title">🏆 Champion Leaderboard</h3>
+          <div class="leaderboard-empty">No results yet. Play this quiz to see who wins most!</div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="leaderboard-section">
+        <h3 class="leaderboard-title">🏆 Champion Leaderboard</h3>
+        <div class="leaderboard-subtitle">Based on ${totalResults} completed tournament${totalResults !== 1 ? 's' : ''}</div>
+        <div class="leaderboard-list">
+          ${leaders.map((l, i) => `
+            <div class="leaderboard-item">
+              <span class="leaderboard-rank">#${i + 1}</span>
+              ${l.image ? `<img class="leaderboard-img" src="${l.image}" alt="${escHtml(l.name)}">` : ''}
+              <span class="leaderboard-name">${escHtml(l.name)}</span>
+              <div class="leaderboard-bar-wrap">
+                <div class="leaderboard-bar" style="width:${l.winPct}%"></div>
+              </div>
+              <span class="leaderboard-pct">${l.winPct}%</span>
+              <span class="leaderboard-wins">${l.wins} win${l.wins !== 1 ? 's' : ''}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  } catch (err) {
+    container.innerHTML = '';
+  }
+}
+
+// ===========================
+// Tournament Progress Saving
+// ===========================
+function saveTournamentProgress() {
+  const t = state.tournament;
+  if (!t || t.done) return;
+  try {
+    const data = {
+      quizId: t.quizId, allItems: t.allItems, currentRound: t.currentRound,
+      winners: t.winners, matchIndex: t.matchIndex, history: t.history,
+      roundNumber: t.roundNumber, totalRounds: t.totalRounds, size: t.size,
+      roundName: t.roundName, done: t.done, champion: t.champion,
+      undoStack: t.undoStack.slice(-20), // limit undo depth for storage
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(`tournament_progress_${t.quizId}`, JSON.stringify(data));
+  } catch { /* storage full — silently fail */ }
+}
+
+function loadTournamentProgress(quizId) {
+  try {
+    const raw = localStorage.getItem(`tournament_progress_${quizId}`);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) {
+      clearTournamentProgress(quizId);
+      return null;
+    }
+    return data;
+  } catch { return null; }
+}
+
+function clearTournamentProgress(quizId) {
+  localStorage.removeItem(`tournament_progress_${quizId}`);
+}
+
+function resumeTournament() {
+  const progress = loadTournamentProgress(state.currentQuiz.id);
+  if (!progress) { showToast('No saved progress found', 'error'); return; }
+  state.tournament = progress;
+  renderTournamentMatch();
+}
+
+function discardProgress(quizId) {
+  clearTournamentProgress(quizId);
+  renderQuizLobby(quizId);
+}
+
+// ===========================
+// Bookmarks
+// ===========================
+async function toggleBookmark(e, id) {
+  e.stopPropagation();
+  if (!state.currentUser) {
+    showToast('Sign in to bookmark quizzes', 'info');
+    navigate('signin');
+    return;
+  }
+  try {
+    const { bookmarked } = await api(`/quizzes/${id}/bookmark`, { method: 'POST' });
+    showToast(bookmarked ? 'Bookmarked!' : 'Bookmark removed', bookmarked ? 'success' : 'info');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+async function renderBookmarks() {
+  const container = $('bookmarks-content');
+  if (!container) return;
+
+  if (!state.currentUser) {
+    container.innerHTML = `
+      <div class="auth-container">
+        <div class="auth-card" style="text-align:center">
+          <div style="font-size:2.5rem;margin-bottom:1rem">🔒</div>
+          <h2 style="margin-bottom:0.5rem">Sign in required</h2>
+          <p style="color:var(--text-muted);margin-bottom:1.5rem">Sign in to see your bookmarks.</p>
+          <button class="btn btn-primary" onclick="navigate('signin')">Sign In</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)">Loading bookmarks...</div>';
+
+  try {
+    const { quizzes } = await api('/quizzes/bookmarked/list');
+    container.innerHTML = `
+      <div class="my-quizzes-container">
+        <div class="my-quizzes-header">
+          <h1 style="font-size:1.4rem;font-weight:700">🔖 My Bookmarks</h1>
+        </div>
+        ${quizzes.length > 0 ? `
+          <div class="quiz-grid">
+            ${quizzes.map(q => createQuizCard(q).outerHTML).join('')}
+          </div>
+        ` : `
+          <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted)">
+            <div style="font-size:2rem;margin-bottom:0.75rem">🔖</div>
+            <p>No bookmarks yet. Browse quizzes and bookmark your favorites!</p>
+            <button class="btn btn-primary" style="margin-top:1rem" onclick="navigate('browse')">Browse Quizzes</button>
+          </div>
+        `}
+      </div>`;
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 // ===========================

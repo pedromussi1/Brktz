@@ -54,10 +54,21 @@ app.use('/api', apiLimiter);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
+// Contact form rate limiter (stricter)
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many messages, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // API routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/quizzes', require('./routes/quizzes'));
 app.use('/api/upload', require('./routes/uploads'));
+app.use('/api/contact', contactLimiter, require('./routes/contact'));
+app.use('/api/users', require('./routes/users'));
 
 // SPA fallback — serve index.html for any non-API route
 app.get('*', (req, res) => {

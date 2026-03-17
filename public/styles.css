@@ -3246,3 +3246,107 @@ img {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ===========================
+   Comments
+   =========================== */
+.comments-section { margin-top: 2rem; }
+.comments-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
+.comment-form {
+  display: flex; gap: 0.75rem; align-items: flex-start;
+  margin-bottom: 1.5rem; padding: 1rem;
+  background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
+}
+.comment-form-avatar {
+  width: 36px; height: 36px; border-radius: 50%; background: var(--primary);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+}
+.comment-signin-prompt {
+  padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;
+  background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.comment-signin-prompt a { color: var(--primary); font-weight: 600; }
+.comments-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.comments-empty { text-align: center; padding: 2rem; color: var(--text-faint); font-size: 0.9rem; }
+.comment-item {
+  display: flex; gap: 0.75rem; padding: 1rem;
+  background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border);
+}
+.comment-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--bg3);
+  color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.8rem; flex-shrink: 0; cursor: pointer;
+}
+.comment-content { flex: 1; min-width: 0; }
+.comment-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.comment-username {
+  font-weight: 600; font-size: 0.85rem; color: var(--primary); cursor: pointer;
+}
+.comment-username:hover { text-decoration: underline; }
+.comment-time { font-size: 0.75rem; color: var(--text-faint); }
+.comment-delete {
+  margin-left: auto; background: none; border: none; color: var(--text-faint);
+  cursor: pointer; font-size: 0.8rem; padding: 0 0.25rem;
+}
+.comment-delete:hover { color: var(--warning); }
+.comment-body { font-size: 0.9rem; line-height: 1.5; color: var(--text); word-break: break-word; }
+
+/* ===========================
+   Leaderboard
+   =========================== */
+.leaderboard-section { margin-top: 2rem; }
+.leaderboard-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
+.leaderboard-subtitle { font-size: 0.8rem; color: var(--text-faint); margin-bottom: 1rem; }
+.leaderboard-empty { text-align: center; padding: 2rem; color: var(--text-faint); font-size: 0.9rem; }
+.leaderboard-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.leaderboard-item {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem;
+  background: var(--card-bg); border-radius: var(--radius-sm); border: 1px solid var(--border);
+}
+.leaderboard-rank {
+  font-weight: 700; font-size: 0.85rem; color: var(--text-muted); min-width: 28px;
+}
+.leaderboard-item:nth-child(1) .leaderboard-rank { color: #f59e0b; }
+.leaderboard-item:nth-child(2) .leaderboard-rank { color: #94a3b8; }
+.leaderboard-item:nth-child(3) .leaderboard-rank { color: #b45309; }
+.leaderboard-img {
+  width: 32px; height: 32px; border-radius: var(--radius-sm); object-fit: cover;
+}
+.leaderboard-name { font-weight: 600; font-size: 0.85rem; min-width: 80px; }
+.leaderboard-bar-wrap {
+  flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden;
+}
+.leaderboard-bar {
+  height: 100%; background: linear-gradient(90deg, var(--primary), #8b5cf6);
+  border-radius: 4px; min-width: 2px; transition: width 0.4s ease;
+}
+.leaderboard-pct { font-weight: 700; font-size: 0.8rem; min-width: 40px; text-align: right; }
+.leaderboard-wins { font-size: 0.75rem; color: var(--text-faint); min-width: 50px; text-align: right; }
+
+/* ===========================
+   Resume Banner
+   =========================== */
+.lobby-resume-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: 1rem 1.25rem; margin-top: 1.5rem;
+  background: var(--primary-light); border: 1px solid var(--primary);
+  border-left: 4px solid var(--primary); border-radius: var(--radius);
+}
+.resume-info { display: flex; flex-direction: column; gap: 0.25rem; }
+.resume-info strong { font-size: 0.95rem; }
+.resume-info span { font-size: 0.8rem; color: var(--text-muted); }
+.resume-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+@media (max-width: 500px) {
+  .lobby-resume-banner { flex-direction: column; align-items: flex-start; }
+  .leaderboard-item { flex-wrap: wrap; }
+  .leaderboard-bar-wrap { min-width: 100%; order: 10; }
+}
+
+/* ===========================
+   Clickable @username
+   =========================== */
+.quiz-card-creator { cursor: pointer; }
+.quiz-card-creator:hover { color: var(--primary); text-decoration: underline; }
