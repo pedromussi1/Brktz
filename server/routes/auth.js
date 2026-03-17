@@ -99,9 +99,11 @@ router.post('/signin', async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
     // Auto-upgrade to admin if email matches ADMIN_EMAILS
+    console.log(`[signin] user=${user.username} email=${user.email} is_admin=${user.is_admin} ADMIN_EMAILS="${process.env.ADMIN_EMAILS}" match=${isAdminEmail(user.email)} smtp=${isSmtpConfigured()}`);
     if (!user.is_admin && isAdminEmail(user.email)) {
       db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(user.id);
       user.is_admin = 1;
+      console.log(`[signin] Upgraded ${user.username} to admin`);
     }
 
     // If SMTP is not configured, skip MFA and return token directly
