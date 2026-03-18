@@ -2,7 +2,7 @@
 
 A tournament-style bracket quiz platform. Create, play, and share bracket quizzes across categories like K-Pop, Gaming, Anime, Entertainment, Food, and more. Players narrow down choices round by round until a champion emerges.
 
-**[Live Demo](https://brktz-production.up.railway.app/)**
+**[Live Demo](https://web-production-bb621.up.railway.app/)**
 
 ## Features
 
