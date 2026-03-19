@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Sitemap: /sitemap.xml
+
+# Block API endpoints from crawling
+Disallow: /api/
+Disallow: /uploads/

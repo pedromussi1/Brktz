@@ -1,4 +1,23 @@
 // ===========================
+// Cookie Consent
+// ===========================
+function showCookieConsent() {
+  if (localStorage.getItem('cookie-consent')) return;
+  const banner = document.getElementById('cookie-consent');
+  if (banner) banner.style.display = '';
+}
+
+function acceptCookies() {
+  localStorage.setItem('cookie-consent', 'accepted');
+  document.getElementById('cookie-consent').style.display = 'none';
+}
+
+function rejectCookies() {
+  localStorage.setItem('cookie-consent', 'rejected');
+  document.getElementById('cookie-consent').style.display = 'none';
+}
+
+// ===========================
 // API Helper
 // ===========================
 const API_BASE = '/api';
@@ -2598,6 +2617,9 @@ async function init() {
   }
 
   document.addEventListener('click', () => closeUserDropdown());
+
+  // Show cookie consent banner if not yet accepted/rejected
+  showCookieConsent();
 
   // Parse initial URL and navigate
   const initial = parseUrl();

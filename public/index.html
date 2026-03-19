@@ -8,10 +8,33 @@
   <meta property="og:title" content="Brktz — Quiz Tournaments">
   <meta property="og:description" content="Play tournament-style quizzes on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Brktz">
+  <meta property="og:image" content="/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Brktz — Quiz Tournaments">
+  <meta name="twitter:description" content="Play tournament-style quizzes on K-Pop, Anime, Gaming, Movies, Food and more.">
+  <meta name="twitter:image" content="/og-image.svg">
+  <meta name="theme-color" content="#3b82f6">
+  <link rel="canonical" href="/">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%233b82f6'/><text y='.9em' font-size='72' x='12' fill='white' font-weight='900'>B</text></svg>">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+<!-- Cookie Consent Banner -->
+<div id="cookie-consent" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--card-bg,#1a1a2e);border-top:1px solid var(--border,#2a2a4a);padding:1rem 1.5rem;box-shadow:0 -4px 20px rgba(0,0,0,0.3)">
+  <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <p style="flex:1;margin:0;font-size:0.9rem;color:var(--text-muted,#a0a0b0)">
+      We use cookies and similar technologies to improve your experience, serve personalized ads, and analyze traffic.
+      By continuing to use this site, you consent to our use of cookies.
+      <a href="#" onclick="navigate('privacy'); return false;" style="color:var(--primary,#3b82f6)">Privacy Policy</a>
+    </p>
+    <div style="display:flex;gap:0.5rem;flex-shrink:0">
+      <button onclick="acceptCookies()" class="btn btn-primary btn-sm">Accept All</button>
+      <button onclick="rejectCookies()" class="btn btn-outline btn-sm">Reject Non-Essential</button>
+    </div>
+  </div>
+</div>
 
 <!-- NProgress Bar -->
 <div id="nprogress"></div>

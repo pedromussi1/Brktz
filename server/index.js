@@ -70,6 +70,30 @@ app.use('/api/upload', require('./routes/uploads'));
 app.use('/api/contact', contactLimiter, require('./routes/contact'));
 app.use('/api/users', require('./routes/users'));
 
+// Dynamic sitemap with quiz pages
+app.get('/sitemap.xml', (req, res) => {
+  const db = require('./db');
+  const quizzes = db.prepare('SELECT id, title FROM quizzes ORDER BY created_at DESC').all();
+  const baseUrl = process.env.ALLOWED_ORIGIN || `${req.protocol}://${req.get('host')}`;
+
+  const staticPages = ['/', '/about', '/contact', '/support', '/guidelines', '/terms', '/privacy', '/signin', '/signup'];
+
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+  staticPages.forEach(p => {
+    xml += `  <url><loc>${baseUrl}${p}</loc><changefreq>${p === '/' ? 'daily' : 'monthly'}</changefreq><priority>${p === '/' ? '1.0' : '0.5'}</priority></url>\n`;
+  });
+
+  quizzes.forEach(q => {
+    xml += `  <url><loc>${baseUrl}/quiz/${q.id}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
+  });
+
+  xml += '</urlset>';
+  res.set('Content-Type', 'application/xml');
+  res.send(xml);
+});
+
 // SPA fallback — serve index.html for any non-API route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
