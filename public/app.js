@@ -182,6 +182,11 @@ function updateAuthUI() {
           <a class="user-dropdown-item" href="#" onclick="navigate('my-quizzes'); closeUserDropdown(); return false;">
             <span>🏆</span> My Quizzes
           </a>
+          ${user.is_admin ? `
+          <div class="user-dropdown-divider"></div>
+          <a class="user-dropdown-item" href="#" onclick="navigate('admin'); closeUserDropdown(); return false;">
+            <span>🛡️</span> Admin Dashboard
+          </a>` : ''}
           <div class="user-dropdown-divider"></div>
           <a class="user-dropdown-item" href="#" onclick="doSignOut(); return false;">
             <span>🚪</span> Sign Out
@@ -345,6 +350,8 @@ function buildUrl(page, data) {
     case 'my-quizzes': return '/my-quizzes';
     case 'user-profile': return `/user/${encodeURIComponent(data.username)}`;
     case 'bookmarks': return '/bookmarks';
+    case 'forgot-password': return '/forgot-password';
+    case 'admin': return '/admin';
     default: return `/${page}`;
   }
 }
@@ -360,6 +367,8 @@ function parseUrl() {
   if (path === '/profile') return { page: 'profile', data: {} };
   if (path === '/my-quizzes') return { page: 'my-quizzes', data: {} };
   if (path === '/bookmarks') return { page: 'bookmarks', data: {} };
+  if (path === '/forgot-password') return { page: 'forgot-password', data: {} };
+  if (path === '/admin') return { page: 'admin', data: {} };
   if (path.startsWith('/user/')) return { page: 'user-profile', data: { username: decodeURIComponent(path.slice(6)) } };
   if (path === '/search') return { page: 'search', data: { q: params.get('q') || '' } };
   // Default: browse
@@ -402,6 +411,8 @@ function navigate(page, data = {}) {
     case 'user-profile': renderUserProfile(data.username); break;
     case 'bookmarks': renderBookmarks(); break;
     case 'contact': renderContactPage(); break;
+    case 'forgot-password': renderForgotPassword(); break;
+    case 'admin': renderAdminDashboard(); break;
     default: break;
   }
 
@@ -1921,6 +1932,9 @@ function buildSidebar() {
     bottomItems.unshift({ icon: '🔖', label: 'Bookmarks', page: 'bookmarks' });
     bottomItems.unshift({ icon: '👤', label: 'My Profile', page: 'profile' });
     bottomItems.unshift({ icon: '🏆', label: 'My Quizzes', page: 'my-quizzes' });
+    if (state.currentUser.is_admin) {
+      bottomItems.unshift({ icon: '🛡️', label: 'Admin', page: 'admin' });
+    }
   } else {
     bottomItems.unshift({ icon: '🔑', label: 'Sign In', page: 'signin' });
   }
@@ -2268,6 +2282,231 @@ async function renderBookmarks() {
       </div>`;
   } catch (err) {
     showToast(err.message, 'error');
+  }
+}
+
+// ===========================
+// Forgot Password
+// ===========================
+function renderForgotPassword() {
+  const form = $('forgot-password-form');
+  if (!form) return;
+  form.reset();
+
+  // Remove any previous reset UI
+  const existingReset = document.getElementById('reset-section');
+  if (existingReset) existingReset.remove();
+  const emailGroup = $('forgot-email-group');
+  const submitBtn = $('forgot-submit-btn');
+  if (emailGroup) emailGroup.style.display = '';
+  if (submitBtn) { submitBtn.style.display = ''; submitBtn.textContent = 'Send Reset Code'; }
+
+  form.onsubmit = async e => {
+    e.preventDefault();
+    const email = $('forgot-email').value.trim();
+    if (!email) { showToast('Please enter your email', 'error'); return; }
+
+    const submitBtn = $('forgot-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+
+    try {
+      await api('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+    } catch (err) {
+      showToast(err.message, 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send Reset Code';
+      return;
+    }
+
+    // Always show code input after submission (even if email not found, for security)
+    if (emailGroup) emailGroup.style.display = 'none';
+    submitBtn.style.display = 'none';
+
+    const section = document.createElement('div');
+    section.id = 'reset-section';
+    section.innerHTML = `
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:2rem;margin-bottom:0.5rem">📧</div>
+        <h3 style="margin-bottom:0.5rem">Check your email</h3>
+        <p style="color:var(--text-muted);font-size:0.9rem">If an account exists for <strong>${escHtml(email)}</strong>, we sent a reset code.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reset Code</label>
+        <input type="text" id="reset-code" class="form-input" placeholder="6-digit code" maxlength="6" style="text-align:center;font-size:1.5rem;letter-spacing:0.3em" autocomplete="one-time-code">
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <input type="password" id="reset-new-password" class="form-input" placeholder="New password (min 6 characters)" minlength="6">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New Password</label>
+        <input type="password" id="reset-confirm-password" class="form-input" placeholder="Confirm new password">
+      </div>
+      <button type="button" id="reset-submit-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:0.75rem;margin-top:0.5rem">Reset Password</button>
+      <p style="text-align:center;margin-top:1rem;font-size:0.8rem;color:var(--text-faint)">Code expires in 10 minutes</p>
+    `;
+    form.appendChild(section);
+    $('reset-code').focus();
+
+    $('reset-submit-btn').addEventListener('click', async () => {
+      const code = $('reset-code').value.trim();
+      const newPassword = $('reset-new-password').value;
+      const confirmPassword = $('reset-confirm-password').value;
+      if (code.length !== 6) { showToast('Please enter the 6-digit code', 'error'); return; }
+      if (newPassword.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+      if (newPassword !== confirmPassword) { showToast('Passwords do not match', 'error'); return; }
+
+      const btn = $('reset-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Resetting...';
+
+      try {
+        await api('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email, code, newPassword }) });
+        showToast('Password reset! Please sign in with your new password.', 'success');
+        navigate('signin');
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Reset Password';
+      }
+    });
+  };
+}
+
+// ===========================
+// Admin Dashboard
+// ===========================
+async function renderAdminDashboard() {
+  const container = $('admin-content');
+  if (!container) return;
+
+  if (!state.currentUser?.is_admin) {
+    container.innerHTML = `
+      <div class="auth-container">
+        <div class="auth-card" style="text-align:center">
+          <div style="font-size:2.5rem;margin-bottom:1rem">🚫</div>
+          <h2>Access Denied</h2>
+          <p style="color:var(--text-muted);margin-top:0.5rem">Admin access required.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)">Loading...</div>';
+
+  try {
+    const [{ messages }, { users }] = await Promise.all([
+      api('/contact'),
+      api('/users'),
+    ]);
+
+    const unread = messages.filter(m => m.status === 'unread').length;
+
+    container.innerHTML = `
+      <div style="max-width:960px;margin:0 auto;padding:1.5rem 1rem">
+        <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:1.5rem">🛡️ Admin Dashboard</h1>
+        <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0.75rem">
+          <button id="tab-messages" class="btn btn-primary btn-sm">
+            Contact Messages ${unread > 0 ? `<span style="background:var(--accent-red,#ef4444);color:#fff;border-radius:999px;padding:0 6px;font-size:0.7rem;margin-left:4px">${unread}</span>` : ''}
+          </button>
+          <button id="tab-users" class="btn btn-outline btn-sm">Users (${users.length})</button>
+        </div>
+        <div id="admin-tab-content"></div>
+      </div>`;
+
+    function renderMessagesTab() {
+      $('tab-messages').className = 'btn btn-primary btn-sm';
+      $('tab-users').className = 'btn btn-outline btn-sm';
+      const tab = $('admin-tab-content');
+      if (messages.length === 0) {
+        tab.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">No messages yet.</p>';
+        return;
+      }
+      tab.innerHTML = messages.map(m => `
+        <div id="msg-${m.id}" style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.75rem;${m.status === 'unread' ? 'border-left:3px solid var(--primary)' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+            <div>
+              <strong>${escHtml(m.name)}</strong>
+              <span style="color:var(--text-muted);font-size:0.8rem;margin-left:0.5rem">&lt;${escHtml(m.email)}&gt;</span>
+              ${m.status === 'unread' ? '<span style="background:var(--primary);color:#fff;border-radius:4px;padding:1px 6px;font-size:0.7rem;margin-left:0.5rem">NEW</span>' : ''}
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-shrink:0">
+              <button class="btn btn-outline btn-sm" onclick="adminToggleRead(${m.id}, '${m.status}')">
+                ${m.status === 'unread' ? 'Mark Read' : 'Mark Unread'}
+              </button>
+              <button class="btn btn-outline btn-sm" style="color:var(--accent-red,#ef4444)" onclick="adminDeleteMessage(${m.id})">Delete</button>
+            </div>
+          </div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:0.35rem">${escHtml(m.subject)} · ${timeAgo(new Date(m.created_at + 'Z').getTime())}</div>
+          <div style="margin-top:0.6rem;font-size:0.9rem;white-space:pre-wrap">${escHtml(m.message)}</div>
+        </div>`).join('');
+    }
+
+    function renderUsersTab() {
+      $('tab-messages').className = 'btn btn-outline btn-sm';
+      $('tab-users').className = 'btn btn-primary btn-sm';
+      const tab = $('admin-tab-content');
+      tab.innerHTML = `
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);text-align:left">
+                <th style="padding:0.5rem 0.75rem">Username</th>
+                <th style="padding:0.5rem 0.75rem">Email</th>
+                <th style="padding:0.5rem 0.75rem">Joined</th>
+                <th style="padding:0.5rem 0.75rem">Role</th>
+                <th style="padding:0.5rem 0.75rem"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.map(u => `
+                <tr id="user-row-${u.id}" style="border-bottom:1px solid var(--border)">
+                  <td style="padding:0.6rem 0.75rem;font-weight:600">${escHtml(u.username)}</td>
+                  <td style="padding:0.6rem 0.75rem;color:var(--text-muted)">${escHtml(u.email)}</td>
+                  <td style="padding:0.6rem 0.75rem;color:var(--text-muted)">${timeAgo(new Date(u.created_at + 'Z').getTime())}</td>
+                  <td style="padding:0.6rem 0.75rem">${u.is_admin ? '<span class="admin-badge">ADMIN</span>' : 'User'}</td>
+                  <td style="padding:0.6rem 0.75rem">
+                    ${u.id !== state.currentUser.id ? `<button class="btn btn-outline btn-sm" style="color:var(--accent-red,#ef4444)" onclick="adminDeleteUser(${u.id}, '${escHtml(u.username)}')">Delete</button>` : '<span style="color:var(--text-faint);font-size:0.8rem">You</span>'}
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    $('tab-messages').addEventListener('click', renderMessagesTab);
+    $('tab-users').addEventListener('click', renderUsersTab);
+    renderMessagesTab();
+
+    // Expose helpers for onclick handlers
+    window.adminToggleRead = async (id, currentStatus) => {
+      try {
+        const { status } = await api(`/contact/${id}/read`, { method: 'PATCH' });
+        // Re-render to reflect change
+        renderAdminDashboard();
+      } catch (err) { showToast(err.message, 'error'); }
+    };
+
+    window.adminDeleteMessage = async (id) => {
+      if (!confirm('Delete this message?')) return;
+      try {
+        await api(`/contact/${id}`, { method: 'DELETE' });
+        renderAdminDashboard();
+      } catch (err) { showToast(err.message, 'error'); }
+    };
+
+    window.adminDeleteUser = async (id, username) => {
+      if (!confirm(`Delete user "${username}" and all their quizzes? This cannot be undone.`)) return;
+      try {
+        await api(`/users/${id}`, { method: 'DELETE' });
+        renderAdminDashboard();
+      } catch (err) { showToast(err.message, 'error'); }
+    };
+
+  } catch (err) {
+    showToast(err.message, 'error');
+    container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:3rem">${escHtml(err.message)}</p>`;
   }
 }
 

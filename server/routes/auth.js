@@ -150,6 +150,58 @@ router.post('/verify-signin', async (req, res) => {
   }
 });
 
+// ── POST /api/auth/forgot-password ── send reset code to email
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    if (!isSmtpConfigured()) {
+      return res.status(503).json({ error: 'Password reset requires email to be configured. Please contact the administrator.' });
+    }
+
+    // Look up user but always respond the same to avoid enumeration
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
+    if (user) {
+      const code = generateCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      db.prepare("UPDATE verification_codes SET used = 1 WHERE email = ? AND purpose = 'reset' AND used = 0").run(email);
+      db.prepare('INSERT INTO verification_codes (email, code, purpose, payload, expires_at) VALUES (?, ?, ?, ?, ?)').run(email, code, 'reset', String(user.id), expiresAt);
+      await sendVerificationEmail(email, code);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
+// ── POST /api/auth/reset-password ── verify code + set new password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) return res.status(400).json({ error: 'Email, code, and new password are required' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+
+    const row = db.prepare(
+      "SELECT * FROM verification_codes WHERE email = ? AND code = ? AND purpose = 'reset' AND used = 0 AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1"
+    ).get(email, code);
+
+    if (!row) return res.status(400).json({ error: 'Invalid or expired code' });
+
+    db.prepare('UPDATE verification_codes SET used = 1 WHERE id = ?').run(row.id);
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, parseInt(row.payload));
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: err.message || 'Server error' });
+  }
+});
+
 // GET /api/auth/me — get current user from token
 router.get('/me', requireAuth, (req, res) => {
   const user = db.prepare('SELECT id, username, email, is_admin, created_at FROM users WHERE id = ?').get(req.user.id);

@@ -1,8 +1,24 @@
 const express = require('express');
 const db = require('../db');
-const { optionalAuth } = require('../middleware/auth');
+const { optionalAuth, requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+
+// GET /api/users — admin: list all users
+router.get('/', requireAuth, (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'Forbidden' });
+  const users = db.prepare('SELECT id, username, email, is_admin, created_at FROM users ORDER BY created_at DESC').all();
+  res.json({ users });
+});
+
+// DELETE /api/users/:id — admin: delete a user
+router.delete('/:id', requireAuth, (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'Forbidden' });
+  const targetId = parseInt(req.params.id);
+  if (targetId === req.user.id) return res.status(400).json({ error: 'Cannot delete your own account' });
+  db.prepare('DELETE FROM users WHERE id = ?').run(targetId);
+  res.json({ success: true });
+});
 
 // GET /api/users/:username — public profile
 router.get('/:username', optionalAuth, (req, res) => {
