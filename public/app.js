@@ -10,11 +10,15 @@ function showCookieConsent() {
 function acceptCookies() {
   localStorage.setItem('cookie-consent', 'accepted');
   document.getElementById('cookie-consent').style.display = 'none';
+  // Enable analytics after consent
+  if (typeof gtag === 'function') gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'granted' });
 }
 
 function rejectCookies() {
   localStorage.setItem('cookie-consent', 'rejected');
   document.getElementById('cookie-consent').style.display = 'none';
+  // Disable non-essential tracking
+  if (typeof gtag === 'function') gtag('consent', 'update', { analytics_storage: 'denied', ad_storage: 'denied' });
 }
 
 // ===========================

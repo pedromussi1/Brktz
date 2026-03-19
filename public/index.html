@@ -9,15 +9,29 @@
   <meta property="og:description" content="Play tournament-style quizzes on K-Pop, Anime, Gaming, Movies, Food and more. Pick your favourite each round until one champion remains!">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Brktz">
-  <meta property="og:image" content="/og-image.svg">
+  <meta property="og:url" content="https://brktz.live">
+  <meta property="og:image" content="https://brktz.live/og-image.svg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Brktz — Quiz Tournaments">
   <meta name="twitter:description" content="Play tournament-style quizzes on K-Pop, Anime, Gaming, Movies, Food and more.">
-  <meta name="twitter:image" content="/og-image.svg">
+  <meta name="twitter:image" content="https://brktz.live/og-image.svg">
   <meta name="theme-color" content="#3b82f6">
-  <link rel="canonical" href="/">
+  <link rel="canonical" href="https://brktz.live">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%233b82f6'/><text y='.9em' font-size='72' x='12' fill='white' font-weight='900'>B</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C7EDJYSKSG"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    // Default consent to denied until user accepts cookie banner
+    gtag('consent', 'default', {
+      analytics_storage: localStorage.getItem('cookie-consent') === 'accepted' ? 'granted' : 'denied',
+      ad_storage: localStorage.getItem('cookie-consent') === 'accepted' ? 'granted' : 'denied',
+    });
+    gtag('js', new Date());
+    gtag('config', 'G-C7EDJYSKSG');
+  </script>
 </head>
 <body>
 

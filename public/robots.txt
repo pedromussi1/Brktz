@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: /sitemap.xml
+Sitemap: https://brktz.live/sitemap.xml
 
 # Block API endpoints from crawling
 Disallow: /api/
